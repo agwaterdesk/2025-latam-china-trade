@@ -1,40 +1,30 @@
 <script>
-
-
     let { slide, isActive } = $props();
 </script>
 
 <section class="slide" class:active={isActive}>
     <div class="slide-content">
-        <p class="slide-text">{slide.Text}</p>
+        <p class="slide-text">{slide.text}</p>
     </div>
 </section>
 
 <style>
     .slide {
-        height: 80vh;
+        height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 2rem;
-        margin: 0 0 2em 0;
-        background: linear-gradient(135deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5));
-        color: white;
-        backdrop-filter: blur(10px);
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        opacity: 0.8;
-    }
 
-    .slide.active {
-        opacity: 1;
-        background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
-        transform: scale(1.02);
+        margin: 0 0 2em 0;
     }
 
     .slide-content {
-        max-width: 600px;
+        max-width: 650px;
         text-align: center;
+        background: white;
+        padding: 2rem;
+        border: 7px solid var(--color-theme-color-primary);
+        font-family: var(--font-body);
     }
 
     .slide-text {
@@ -49,7 +39,7 @@
             height: 60vh;
             padding: 1rem;
         }
-        
+
         .slide-text {
             font-size: 1rem;
         }

@@ -22,7 +22,7 @@
             // Define view configurations for each slide ID
             const views = {
                 us_china_routes: {
-                    center: [-100, 40], // Center on US-China trade route
+                    bbox: [-282.319107,-1.178201,-62.416763,63.571788],
                     zoom: 2,
                     pitch: 0,
                     bearing: 0,
@@ -55,13 +55,24 @@
 
             const view = views[id];
             if (view) {
-                map.easeTo({
-                    center: view.center,
-                    zoom: view.zoom,
-                    pitch: view.pitch,
-                    bearing: view.bearing,
-                    duration: 2000,
-                });
+                if (view.bbox) {
+                    // Use bbox to fit the map to the specified bounds
+                    map.fitBounds(view.bbox, {
+                        padding: 50,
+                        duration: 2000,
+                        pitch: view.pitch || 0,
+                        bearing: view.bearing || 0,
+                    });
+                } else {
+                    // Use center/zoom positioning
+                    map.easeTo({
+                        center: view.center,
+                        zoom: view.zoom,
+                        pitch: view.pitch,
+                        bearing: view.bearing,
+                        duration: 2000,
+                    });
+                }
             }
         },
     };
