@@ -9,8 +9,6 @@ node_modules
 /build
 
 # Auto-generated embed files (keep dist/ for GitHub hosting)
-wordpress-github-embed.html
-wordpress-simple-embed.html
 wordpress-embed.html
 
 # OS

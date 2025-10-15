@@ -7,11 +7,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Configuration
-const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/agwaterdesk/2025-latam-china-trade/refs/heads/main/dist/';
+// Configuration - Using jsDelivr CDN for proper MIME types
+const JSDELIVR_BASE_URL = 'https://cdn.jsdelivr.net/gh/agwaterdesk/2025-latam-china-trade@main/dist/';
 const DIST_PATH = join(__dirname, 'dist');
 const INDEX_HTML_PATH = join(DIST_PATH, 'index.html');
-const OUTPUT_PATH = join(__dirname, 'wordpress-github-embed.html');
+const OUTPUT_PATH = join(__dirname, 'wordpress-embed.html');
 
 function extractFileInfo(htmlContent) {
     // Extract CSS file
@@ -46,22 +46,22 @@ function extractFileInfo(htmlContent) {
 function generateEmbedHTML(info) {
     const { cssFile, modulepreloadFiles, startFile, appFile, configVar } = info;
     
-    return `<!-- GitHub-Hosted WordPress Embed for Svelte App -->
+    return `<!-- WordPress Embed for Svelte App -->
 <!-- 
 INSTRUCTIONS:
-1. Run 'npm run build' to generate the dist folder
+1. Run 'npm run build:embed' to generate the dist folder
 2. Commit and push your dist folder to GitHub
 3. Copy this entire block into a WordPress Custom HTML block
-4. No file uploads needed - files are served from GitHub!
 
 AUTO-GENERATED: This file is automatically updated when you run the build process.
+CDN: jsDelivr (https://cdn.jsdelivr.net/) - Proper MIME types for JavaScript modules
 -->
 
-<!-- Load CSS from GitHub -->
-<link href="${GITHUB_BASE_URL}_app/immutable/assets/${cssFile}" rel="stylesheet">
+<!-- Load CSS from jsDelivr CDN -->
+<link href="${JSDELIVR_BASE_URL}_app/immutable/assets/${cssFile}" rel="stylesheet">
 
 <!-- Preload critical modules for better performance -->
-${modulepreloadFiles.map(file => `<link rel="modulepreload" href="${GITHUB_BASE_URL}_app/immutable/${file}">`).join('\n')}
+${modulepreloadFiles.map(file => `<link rel="modulepreload" href="${JSDELIVR_BASE_URL}_app/immutable/${file}">`).join('\n')}
 
 <!-- App Container -->
 <div id="svelte-app-container">
@@ -72,16 +72,16 @@ ${modulepreloadFiles.map(file => `<link rel="modulepreload" href="${GITHUB_BASE_
 </div>
 
 <script>
-// Initialize Svelte app from GitHub
+// Initialize Svelte app from jsDelivr CDN
 (function() {
-    const BASE_URL = "${GITHUB_BASE_URL}";
+    const BASE_URL = "${JSDELIVR_BASE_URL}";
     
     // Set up SvelteKit configuration
     window.${configVar} = { base: BASE_URL };
     
     const container = document.getElementById('svelte-app-container');
     
-    // Load the app from GitHub
+    // Load the app from jsDelivr CDN (proper MIME types)
     Promise.all([
         import(BASE_URL + '_app/immutable/entry/${startFile}'),
         import(BASE_URL + '_app/immutable/entry/${appFile}')
@@ -94,7 +94,7 @@ ${modulepreloadFiles.map(file => `<link rel="modulepreload" href="${GITHUB_BASE_
         });
     }).catch(error => {
         console.error('Svelte app failed to load:', error);
-        container.innerHTML = '<p>Error loading app. Please check the GitHub repository.</p>';
+        container.innerHTML = '<p>Error loading app. Please check the GitHub repository and CDN availability.</p>';
     });
 })();
 </script>`;
@@ -114,10 +114,10 @@ function main() {
     console.log('🔧 Extracting file information...');
     const fileInfo = extractFileInfo(htmlContent);
     
-    console.log('📝 Generating embed HTML...');
+    console.log('📝 Generating jsDelivr embed HTML...');
     const embedHTML = generateEmbedHTML(fileInfo);
     
-    console.log('💾 Writing wordpress-github-embed.html...');
+    console.log('💾 Writing wordpress-embed.html...');
     writeFileSync(OUTPUT_PATH, embedHTML);
     
     console.log('✅ Embed file generated successfully!');
@@ -128,6 +128,7 @@ function main() {
     console.log(`   App: ${fileInfo.appFile}`);
     console.log(`   Config: ${fileInfo.configVar}`);
     console.log(`   Modulepreload: ${fileInfo.modulepreloadFiles.length} files`);
+    console.log('\n🌐 CDN: jsDelivr (proper MIME types for JavaScript modules)');
 }
 
 main();
