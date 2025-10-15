@@ -1,5 +1,5 @@
 <script>
-  import EmbedApp from "$lib/EmbedApp.svelte";
-</script>
-
-<EmbedApp />
+    import Index from "$lib/components/Index.svelte";
+  </script>
+  
+  <Index />
