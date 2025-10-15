@@ -32,7 +32,11 @@ function extractFileInfo(htmlContent) {
     
     // Extract SvelteKit configuration variable name
     const configMatch = htmlContent.match(/(__sveltekit_\w+)\s*=/);
-    const configVar = configMatch ? configMatch[1] : '__sveltekit_9jff17';
+    if (!configMatch) {
+        console.error('❌ Could not find SvelteKit configuration variable in dist/index.html');
+        process.exit(1);
+    }
+    const configVar = configMatch[1];
     
     return {
         cssFile,
