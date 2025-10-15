@@ -9,9 +9,9 @@ const __dirname = dirname(__filename);
 
 // Configuration - Using jsDelivr CDN for proper MIME types
 const JSDELIVR_BASE_URL = 'https://cdn.jsdelivr.net/gh/agwaterdesk/2025-latam-china-trade@main/dist/';
-const DIST_PATH = join(__dirname, 'dist');
+const DIST_PATH = join(__dirname, '..', 'dist');
 const INDEX_HTML_PATH = join(DIST_PATH, 'index.html');
-const OUTPUT_PATH = join(__dirname, 'wordpress-embed.html');
+const OUTPUT_PATH = join(__dirname, '..', 'wordpress-embed.html');
 
 function extractFileInfo(htmlContent) {
     // Extract CSS file

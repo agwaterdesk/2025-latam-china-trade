@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"build:embed": "npm run build && node generate-embed.js",
+		"build:embed": "npm run build && node tasks/generate-embed.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"gdoc": "node tasks/fetch-google.js"
@@ -20,6 +20,7 @@
 	},
 	"dependencies": {
 		"archieml": "^0.5.0",
+		"change-case": "^5.4.4",
 		"mapbox-gl": "^3.15.0"
 	}
 }
