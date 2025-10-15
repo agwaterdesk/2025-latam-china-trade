@@ -1,38 +1,60 @@
-# sv
+# 2025 LATAM-China Trade Svelte App
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A Svelte application designed to be embedded in WordPress sites via GitHub hosting.
 
-## Creating a project
+## 🚀 Quick Start
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+### Development
+```bash
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
+### Build for WordPress Embed
+```bash
+npm run build:embed
 ```
 
-You can preview the production build with `npm run preview`.
+This generates:
+- `dist/` folder with all build files
+- `wordpress-github-embed.html` - Ready-to-use embed code
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+### Deploy
+1. Commit the `dist/` folder to GitHub
+2. Copy contents of `wordpress-github-embed.html`
+3. Paste into WordPress Custom HTML block
+
+## 📋 Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run build:embed` - Build + generate WordPress embed code
+- `npm run preview` - Preview production build
+
+## 📁 Project Structure
+
+```
+src/
+├── lib/
+│   ├── components/     # Svelte components
+│   └── assets/         # Static assets
+└── routes/             # SvelteKit routes
+```
+
+## 🔧 Configuration
+
+- **SvelteKit**: Configured for static output to `dist/` folder
+- **Build**: Generates separate JS/CSS files (not inline) for WordPress compatibility
+- **GitHub**: Files served from GitHub raw URLs for easy WordPress embedding
+
+## 📖 Documentation
+
+See [WORDPRESS-EMBED-INSTRUCTIONS.md](./WORDPRESS-EMBED-INSTRUCTIONS.md) for detailed WordPress embedding instructions.
+
+## 🎯 Features
+
+- Interactive scroll-based components
+- Draggable threshold controls
+- Responsive design
+- WordPress-compatible build output
+- GitHub-hosted deployment
