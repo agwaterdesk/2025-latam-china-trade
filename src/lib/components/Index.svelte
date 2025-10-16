@@ -33,14 +33,36 @@
 
     let containerWidth = $state(0);
     let leftOffset = $state(0);
+    let debounceTimer = null;
 
+    // Debounced function to calculate offsets
+    function calculateOffsets() {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+        debounceTimer = setTimeout(() => {
+            if ($windowWidth && viz) {
+                containerWidth = viz.getBoundingClientRect().width;
+                leftOffset = ($windowWidth - containerWidth) / -2;
+                console.log($windowWidth, containerWidth, leftOffset);
+            }
+        }, 150); // 150ms debounce
+    }
+
+    // Effect that only runs on mount and width changes
     $effect(() => {
         if ($windowWidth) {
-            // containerWidth = viz.getBoundingClientRect().width;
-
-            // leftOffset = ($windowWidth - containerWidth) / -2;
-            console.log($windowWidth, containerWidth, leftOffset);
+            calculateOffsets();
         }
+    });
+
+    // Cleanup debounce timer on component destroy
+    $effect(() => {
+        return () => {
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
+            }
+        };
     });
 </script>
 
