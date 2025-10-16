@@ -14,12 +14,12 @@
         display: flex;
         align-items: center;
         justify-content: center;
-
+        max-width: 500px;
         margin: 0 0 2em 0;
     }
 
     .slide-content {
-        max-width: 650px;
+        /* max-width: 500px; */
         text-align: center;
         background: white;
         padding: 2rem;

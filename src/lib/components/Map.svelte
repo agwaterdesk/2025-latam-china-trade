@@ -2,11 +2,11 @@
     import { onMount, onDestroy } from "svelte";
     import mapboxgl from "mapbox-gl";
     import "mapbox-gl/dist/mapbox-gl.css";
+    import shippingLanes from "../data/Shipping_Lanes_US_China.json";
 
     import { dev } from "$app/environment";
 
-    let { activeId } = $props();
-
+    let { activeId, view } = $props();
 
     // Get Mapbox token from environment variables based on environment
     let mapboxToken = dev
@@ -15,46 +15,29 @@
 
     let mapContainer;
     let map;
+    let overlayActive = $state(false);
     let controller = {
-        updateView: (id) => {
+        updateView: (view, id) => {
             if (!map) return;
 
-            // Define view configurations for each slide ID
-            const views = {
-                us_china_routes: {
-                    bbox: [-282.319107,-1.178201,-62.416763,63.571788],
-                    zoom: 2,
-                    pitch: 0,
-                    bearing: 0,
-                },
-                us_china_chart: {
-                    center: [-100, 40],
-                    zoom: 2.5,
-                    pitch: 15,
-                    bearing: -10,
-                },
-                latam_china_chart: {
-                    center: [-60, -20], // Center on Latin America
-                    zoom: 2.5,
-                    pitch: 20,
-                    bearing: 0,
-                },
-                latam_investments: {
-                    center: [-60, -20],
-                    zoom: 3,
-                    pitch: 25,
-                    bearing: 10,
-                },
-                port_of_santos: {
-                    center: [-46.3, -23.9], // Port of Santos, Brazil
-                    zoom: 6,
-                    pitch: 30,
-                    bearing: 0,
-                },
-            };
-
-            const view = views[id];
             if (view) {
+                // Show/hide shipping lanes based on view
+                if (map.getLayer("shipping-lanes")) {
+                    if (id === "us_china_routes") {
+                        map.setLayoutProperty(
+                            "shipping-lanes",
+                            "visibility",
+                            "visible",
+                        );
+                    } else {
+                        map.setLayoutProperty(
+                            "shipping-lanes",
+                            "visibility",
+                            "none",
+                        );
+                    }
+                }
+
                 if (view.bbox) {
                     // Use bbox to fit the map to the specified bounds
                     map.fitBounds(view.bbox, {
@@ -77,11 +60,9 @@
         },
     };
 
-
-
     $effect(() => {
         if (activeId && map) {
-            controller.updateView(activeId);
+            controller.updateView(view, activeId);
         }
     });
 
@@ -106,19 +87,38 @@
         map.on("load", () => {
             // Add atmosphere effect for the globe
             map.setFog({
-                color: "rgb(186, 210, 235)",
-                "high-color": "rgb(36, 92, 223)",
+                color: "#eeeeee",
+                "high-color": "#ffffff",
                 "horizon-blend": 0.02,
-                "space-color": "rgb(11, 11, 25)",
-                "star-intensity": 0.6,
+                "space-color": "#ffffff",
+                "star-intensity": 0,
+            });
+
+            // Add shipping lanes data source
+            map.addSource("shipping-lanes", {
+                type: "geojson",
+                data: shippingLanes,
+            });
+
+            // Add shipping lanes layer
+            map.addLayer({
+                id: "shipping-lanes",
+                type: "line",
+                source: "shipping-lanes",
+                layout: {
+                    "line-join": "round",
+                    "line-cap": "round",
+                },
+                paint: {
+                    "line-color": "#ff6b35",
+                    "line-width": 2,
+                    "line-opacity": 0.8,
+                },
             });
 
             // Set the atmosphere
             // map.setTerrain({ source: "mapbox-dem", exaggeration: 0 });
         });
-
-        // Add navigation controls
-        map.addControl(new mapboxgl.NavigationControl(), "top-right");
     });
 
     onDestroy(() => {
@@ -126,16 +126,14 @@
             map.remove();
         }
     });
-
-   
 </script>
 
 <div bind:this={mapContainer} class="map-container"></div>
 
-<style>
+<style lang="scss">
     .map-container {
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         position: relative;
     }
 </style>

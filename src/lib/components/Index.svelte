@@ -4,6 +4,7 @@
     import Slide from "./Slide.svelte";
     import copy from "../data/copy.json";
     import Window from "./Window.svelte";
+    import Background from "./Background.svelte";
 
     import { windowWidth, windowHeight } from "../stores/global.js";
 
@@ -19,12 +20,12 @@
 
     // Get slides from copy data
     let slides = copy.scroller.slides;
-    let activeSlideId = $state("");
+    let activeId = $state("");
 
     // Update active slide ID when index changes
     $effect(() => {
         if (slides && index !== undefined) {
-            activeSlideId = slides[index]?.id || "";
+            activeId = slides[index]?.id || "";
         }
     });
 
@@ -55,7 +56,7 @@
         bind:progress
     >
         {#snippet background()}
-            <Map activeId={activeSlideId} />
+            <Background {activeId} />
         {/snippet}
 
         {#snippet foreground()}
@@ -69,8 +70,6 @@
 </div>
 
 <style>
-
-
     :global(body) {
         margin: 0;
     }
@@ -96,66 +95,5 @@
         pointer-events: all;
     }
 
-    :root {
-        --font-body: var(
-            --newspack-theme-font-body,
-            "PT Serif",
-            "Georgia",
-            "serif"
-        );
-        --font-heading: var(
-            --newspack-theme-font-heading,
-            "Noto Sans",
-            "Georgia",
-            "serif"
-        );
-
-        /* Primary colors */
-        --color-theme-color-primary: var(
-            --newspack-theme-color-primary,
-            #90b03e
-        );
-        --color-theme-color-variation: var(
-            --newspack-theme-color-primary-variation,
-            #729220
-        );
-        --color-theme-color-primary-darken-5: var(
-            --newspack-theme-color-primary-darken-5,
-            #8bab39
-        );
-        --color-theme-color-primary-darken-10: var(
-            --newspack-theme-color-primary-darken-10,
-            #86a634
-        );
-        --color-theme-color-primary-against-white: var(
-            --newspack-theme-color-primary-against-white,
-            dimgray
-        );
-        --color-theme-color-against-primary: var(
-            --newspack-theme-color-against-primary,
-            black
-        );
-
-        /* Secondary colors */
-        --color-theme-color-secondary: var(
-            --newspack-theme-color-secondary,
-            #d98e1d
-        );
-        --color-theme-color-secondary-variation: var(
-            --newspack-theme-color-secondary-variation,
-            #b16600
-        );
-        --color-theme-color-secondary-against-white: var(
-            --newspack-theme-color-secondary-against-white,
-            dimgray
-        );
-        --color-theme-color-secondary-variation-against-white: var(
-            --newspack-theme-color-secondary-variation-against-white,
-            #b16600
-        );
-        --color-theme-color-against-secondary: var(
-            --newspack-theme-color-against-secondary,
-            black
-        );
-    }
+  
 </style>
