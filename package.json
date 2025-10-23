@@ -25,6 +25,7 @@
 		"d3": "^7.9.0",
 		"lodash.debounce": "^4.0.8",
 		"mapbox-gl": "^3.15.0",
-		"sass": "^1.93.2"
+		"sass": "^1.93.2",
+		"topojson-client": "^3.1.0"
 	}
 }

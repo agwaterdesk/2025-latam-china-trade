@@ -7,5 +7,10 @@ export default [
 		"id": "1yO-PVi-sWz6DO6JXwogr0uRZfFOMbVB5rD5BY-XSv1A",
 		"gid": "2092662371",
 		"filepath": "src/lib/data/china-food-imports-by-country.csv"
+	},
+	{
+		"id": "1yO-PVi-sWz6DO6JXwogr0uRZfFOMbVB5rD5BY-XSv1A",
+		"gid": "167939714",
+		"filepath": "src/lib/data/ports.csv"
 	}
 ]
