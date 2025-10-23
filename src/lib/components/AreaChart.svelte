@@ -68,7 +68,7 @@
     };
 
     // Chart dimensions
-    const margin = { top: 90, right: 20, bottom: 40, left: 40 };
+    const margin = { top: 300, right: 20, bottom: 300, left: 40 };
     let width = $state(400);
     let height = $state(300);
     const innerWidth = $derived(width - margin.left - margin.right);
@@ -343,7 +343,7 @@
         top: 0;
         left: 0;
         background: #fff;
-        z-index: 1000;
+        z-index: 100;
         box-sizing: border-box;
         border-radius: 12px;
         box-shadow:

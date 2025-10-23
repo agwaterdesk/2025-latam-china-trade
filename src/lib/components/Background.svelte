@@ -4,38 +4,45 @@
     import Map from "./Map.svelte";
     import BumpChart from "./BumpChart.svelte";
     import AreaChart from "./AreaChart.svelte";
+    import Globe from "./Globe.svelte";
     // Define view configurations for each slide ID
     const views = {
         us_china_routes: {
             bbox: [-258.046875, 14.604847, -72.421875, 50.289339],
-            zoom: 2,
-            pitch: 0,
-            bearing: 0,
+            // zoom: 2,
+            // pitch: 0,
+            // bearing: 0,
+            layers: {
+                shippingLanes: "us_china",
+            },
         },
         us_china_chart: {
             bbox: [-250.526733, 18.879001, -117.636108, 52.845083],
-            zoom: 2.5,
-            pitch: 15,
-            bearing: -10,
             overlay: true,
+            layers: {
+                shippingLanes: "us_china",
+            },
         },
         latam_china_chart: {
-            center: [-60, -20], // Center on Latin America
-            zoom: 2.5,
-            pitch: 20,
-            bearing: 0,
+            layers: {
+                shippingLanes: "latam_china",
+            },
         },
         latam_investments: {
-            center: [-60, -20],
-            zoom: 3,
-            pitch: 25,
-            bearing: 10,
+            bounds: "latam_china",
+            layers: {
+                shippingLanes: "latam_china",
+                latam_ports: true,
+            },
         },
         port_of_santos: {
-            center: [-46.3, -23.9], // Port of Santos, Brazil
-            zoom: 6,
+            center: [-46.30193297539687, -23.96607999397377], // Port of Santos, Brazil
+            zoom: 10,
             pitch: 30,
             bearing: 0,
+            layers: {
+                shippingLanes: "latam_china",
+            },
         },
     };
 
@@ -47,6 +54,7 @@
 <div class="background-container">
     {#if activeId == "us_china_chart" || activeId == "latam_china_chart"}
         <AreaChart {activeId} />
+        <Globe {activeId} {view} />
     {/if}
     <div class="map-container-overlay" class:active={view?.overlay}></div>
 
