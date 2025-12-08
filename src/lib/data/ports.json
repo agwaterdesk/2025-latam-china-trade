@@ -1,0 +1,465 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Manzanillo",
+                "country": "Mexico",
+                "region": "Latin America",
+                "prcFirm": "Hutchison, People's Bank of China, China Harbor Engineering Company",
+                "status": "Active",
+                "ownershipShare": "None",
+                "operatorShare": "Majority",
+                "cooperationMode": "Lease"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -104.29,
+                    19.07044
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Veracruz",
+                "country": "Mexico",
+                "region": "Latin America",
+                "prcFirm": "Hutchison, China Harbor Engineering Company, China Communications Construction Company",
+                "status": "Active",
+                "ownershipShare": "None",
+                "operatorShare": "Majority",
+                "cooperationMode": "Lease"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -96.1717,
+                    19.23812
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Port of Balboa",
+                "country": "Panama",
+                "region": "Latin America",
+                "prcFirm": "Hutchison, China Harbor Engineering Company",
+                "status": "Active",
+                "ownershipShare": "None",
+                "operatorShare": "Majority",
+                "cooperationMode": "Lease"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -79.5613,
+                    8.957641
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Paranagua Port Terminal",
+                "country": "Brazil",
+                "region": "Latin America",
+                "prcFirm": "China Merchants Port",
+                "status": "Active",
+                "ownershipShare": "Majority",
+                "operatorShare": "Majority",
+                "cooperationMode": "Acquisition"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -48.5047,
+                    -25.503
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Port of Chancay",
+                "country": "Peru",
+                "region": "Latin America",
+                "prcFirm": "COSCO",
+                "status": "Active",
+                "ownershipShare": "Majority",
+                "operatorShare": "Majority",
+                "cooperationMode": "Acquisition"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -77.2731,
+                    -11.5843
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Port of Cristobal",
+                "country": "Panama",
+                "region": "Latin America",
+                "prcFirm": "Hutchison",
+                "status": "Active",
+                "ownershipShare": "None",
+                "operatorShare": "Majority",
+                "cooperationMode": "Lease"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -79.9016,
+                    9.351867
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Lazaro Cardenas",
+                "country": "Mexico",
+                "region": "Latin America",
+                "prcFirm": "Hutchison",
+                "status": "Active",
+                "ownershipShare": "Majority",
+                "operatorShare": "Majority",
+                "cooperationMode": "Acquisition"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -102.161,
+                    17.92177
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Puerto Cortes Specialized Container and Cargo Terminal",
+                "country": "Honduras",
+                "region": "Latin America",
+                "prcFirm": "China Harbor Engineering Company",
+                "status": "Completed",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -87.9305,
+                    15.83033
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Port of Buenaventura Development Project",
+                "country": "Colombia",
+                "region": "Latin America",
+                "prcFirm": "Bank of China, Industrial and Commercial Bank of China",
+                "status": "In-progress",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "Loan"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -77.0688,
+                    3.894758
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Port of Açu VLCC Terminal",
+                "country": "Brazil",
+                "region": "Latin America",
+                "prcFirm": "China Merchants Port",
+                "status": "In-progress",
+                "ownershipShare": "None",
+                "operatorShare": "Majority",
+                "cooperationMode": "Acquisition"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -41.00117452,
+                    -21.83593706
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Tuxpan Port Container Terminal Project",
+                "country": "Mexico",
+                "region": "Latin America",
+                "prcFirm": "China Harbor General Contracting",
+                "status": "Completed",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -97.3257,
+                    20.95727
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "San Antonio Pier Expansion Project",
+                "country": "Chile",
+                "region": "Latin America",
+                "prcFirm": "China Harbor Engineering Company",
+                "status": "Completed",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -71.622,
+                    -33.5935
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Ensenada",
+                "country": "Mexico",
+                "region": "Latin America",
+                "prcFirm": "Hutchison",
+                "status": "Active",
+                "ownershipShare": "None",
+                "operatorShare": "Majority",
+                "cooperationMode": "Lease"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -116.628,
+                    31.85021
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "DP World Posorja",
+                "country": "Ecuador",
+                "region": "Latin America",
+                "prcFirm": "China Harbor Engineering Company",
+                "status": "Completed",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -80.2543,
+                    -2.68891
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Port of Cabello",
+                "country": "Venezuela",
+                "region": "Latin America",
+                "prcFirm": "China Communications Construction Company",
+                "status": "Completed",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -67.9995,
+                    10.47452
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Pequiven Maritime Terminal Construction Project",
+                "country": "Venezuela",
+                "region": "Latin America",
+                "prcFirm": "China Harbor Engineering Company",
+                "status": "Completed",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.8559,
+                    10.10332
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Port of Santos STS11 Agriculture Terminal",
+                "country": "Brazil",
+                "region": "Latin America",
+                "prcFirm": "COFCO International",
+                "status": "In-progress",
+                "ownershipShare": "Unclear",
+                "operatorShare": "Unclear",
+                "cooperationMode": "Lease"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -46.3021,
+                    -23.9655
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Amador Cruise Terminal",
+                "country": "Panama",
+                "region": "Latin America",
+                "prcFirm": "China Harbor Engineering Company",
+                "status": "Completed",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -79.522,
+                    8.915692
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Port of Montevideo Dredging Project",
+                "country": "Uruguay",
+                "region": "Latin America",
+                "prcFirm": "China Harbor Engineering Company",
+                "status": "In-progress",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -56.2159,
+                    -34.8845
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Porto Sul Intermodal Logistics Complex",
+                "country": "Brazil",
+                "region": "Latin America",
+                "prcFirm": "China Communications Construction Company, China Railway Group",
+                "status": "In-progress",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -39.0266,
+                    -14.7777
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "La Libertad Port",
+                "country": "El Salvador",
+                "region": "Latin America",
+                "prcFirm": "China Harbor Engineering Company",
+                "status": "Completed",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -89.3211,
+                    13.48631
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "San Nicolás Dock",
+                "country": "Peru",
+                "region": "Latin America",
+                "prcFirm": "Shougang",
+                "status": "In-progress",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "N/A"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -75.2367,
+                    -15.2484
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "San Juan de Marcona Port Terminal",
+                "country": "Peru",
+                "region": "Latin America",
+                "prcFirm": "Jinzhao",
+                "status": "In-progress",
+                "ownershipShare": "None",
+                "operatorShare": "None",
+                "cooperationMode": "Lease"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -75.1463,
+                    -15.3498
+                ]
+            }
+        }
+    ]
+}

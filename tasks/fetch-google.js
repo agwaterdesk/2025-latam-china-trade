@@ -34,7 +34,11 @@ const fetchGoogle = async ({ id, gid }) => {
 
 	try {
 		const response = await fetch(url);
-		const text = await response.text();
+		
+		// Ensure proper UTF-8 decoding
+		// Get the response as an ArrayBuffer first, then decode as UTF-8
+		const arrayBuffer = await response.arrayBuffer();
+		const text = new TextDecoder('utf-8').decode(arrayBuffer);
 
 		if (gid) return text;
 
@@ -51,7 +55,8 @@ const fetchGoogle = async ({ id, gid }) => {
 		try {
 			const str = await fetchGoogle(d);
 			const file = `${CWD}/${d.filepath}`;
-			fs.writeFileSync(file, str);
+			// Explicitly write with UTF-8 encoding
+			fs.writeFileSync(file, str, 'utf8');
 		} catch (err) {
 			console.log(err);
 		}

@@ -4,37 +4,41 @@
 	const handlers = [];
 	let manager;
 
-	if (typeof window !== 'undefined') {
-		const run_all = () => handlers.forEach(fn => fn());
+	if (typeof window !== "undefined") {
+		const run_all = () => handlers.forEach((fn) => fn());
 
-		window.addEventListener('scroll', run_all);
-		window.addEventListener('resize', run_all);
+		window.addEventListener("scroll", run_all);
+		window.addEventListener("resize", run_all);
 	}
 
-	if (typeof IntersectionObserver !== 'undefined') {
+	if (typeof IntersectionObserver !== "undefined") {
 		const map = new Map();
 
-		const observer = new IntersectionObserver((entries, observer) => {
-			entries.forEach(entry => {
-				const update = map.get(entry.target);
-				const index = handlers.indexOf(update);
+		const observer = new IntersectionObserver(
+			(entries, observer) => {
+				entries.forEach((entry) => {
+					const update = map.get(entry.target);
+					const index = handlers.indexOf(update);
 
-				if (entry.isIntersecting) {
-					if (index === -1) handlers.push(update);
-				} else {
-					update();
-					if (index !== -1) handlers.splice(index, 1);
-				}
-			});
-		}, {
-			rootMargin: '400px 0px' // TODO why 400?
-		});
+					if (entry.isIntersecting) {
+						if (index === -1) handlers.push(update);
+					} else {
+						update();
+						if (index !== -1) handlers.splice(index, 1);
+					}
+				});
+			},
+			{
+				rootMargin: "400px 0px", // TODO why 400?
+			},
+		);
 
 		manager = {
 			add: ({ outer, update }) => {
 				const { top, bottom } = outer.getBoundingClientRect();
 
-				if (top < window.innerHeight && bottom > 0) handlers.push(update);
+				if (top < window.innerHeight && bottom > 0)
+					handlers.push(update);
 
 				map.set(outer, update);
 				observer.observe(outer);
@@ -46,7 +50,7 @@
 
 				map.delete(outer);
 				observer.unobserve(outer);
-			}
+			},
 		};
 	} else {
 		manager = {
@@ -57,19 +61,19 @@
 			remove: ({ update }) => {
 				const index = handlers.indexOf(update);
 				if (index !== -1) handlers.splice(index, 1);
-			}
+			},
 		};
 	}
 </script>
 
 <script>
-	import { onMount } from 'svelte';
+	import { onMount } from "svelte";
 
 	// config
 	export let top = 0;
 	export let bottom = 1;
 	export let threshold = 0.5;
-	export let query = 'section';
+	export let query = "section";
 	export let parallax = false;
 
 	// bindings
@@ -95,16 +99,16 @@
 	$: bottom_px = Math.round(bottom * wh);
 	$: threshold_px = Math.round(threshold * wh);
 
-	$: (top, bottom, threshold, parallax, update());
+	$: top, bottom, threshold, parallax, update();
 
 	$: style = `
-		position: ${fixed ? 'fixed' : 'absolute'};
+		position: ${fixed ? "fixed" : "absolute"};
 		top: 0;
 		transform: translate(0, ${offset_top}px);
 		z-index: ${inverted ? 3 : 1};
 	`;
 
-	$: widthStyle = fixed ? `width:${width}px;` : '';
+	$: widthStyle = fixed ? `width:${width}px;` : "";
 
 	onMount(() => {
 		sections = foreground.querySelectorAll(query);
@@ -143,13 +147,16 @@
 			fixed = false;
 		} else if (progress >= 1) {
 			offset_top = parallax
-				? (foreground_height - background_height)
-				: (foreground_height - available_space);
+				? foreground_height - background_height
+				: foreground_height - available_space;
 			fixed = false;
 		} else {
-			offset_top = parallax ?
-				Math.round(top_px - progress * (background_height - available_space)) :
-				top_px;
+			offset_top = parallax
+				? Math.round(
+						top_px -
+							progress * (background_height - available_space),
+					)
+				: top_px;
 			fixed = true;
 		}
 
@@ -169,10 +176,13 @@
 	}
 </script>
 
-<svelte:window bind:innerHeight={wh}/>
+<svelte:window bind:innerHeight={wh} />
 
 <svelte-scroller-outer bind:this={outer}>
-	<svelte-scroller-background-container class='background-container' style="{style}{widthStyle}">
+	<svelte-scroller-background-container
+		class="background-container"
+		style="{style}{widthStyle}"
+	>
 		<svelte-scroller-background bind:this={background}>
 			<slot name="background"></slot>
 		</svelte-scroller-background>
@@ -193,6 +203,10 @@
 		display: block;
 		position: relative;
 		width: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		height: 100dvh;
 	}
 
 	svelte-scroller-foreground {
@@ -202,7 +216,7 @@
 	}
 
 	svelte-scroller-foreground::after {
-		content: ' ';
+		content: " ";
 		display: block;
 		clear: both;
 	}

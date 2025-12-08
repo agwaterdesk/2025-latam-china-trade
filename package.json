@@ -20,7 +20,9 @@
 	},
 	"dependencies": {
 		"@rollup/plugin-dsv": "^3.0.5",
+		"@turf/bbox": "^7.3.0",
 		"archieml": "^0.5.0",
+		"chaikin-smooth": "^1.0.4",
 		"change-case": "^5.4.4",
 		"d3": "^7.9.0",
 		"lodash.debounce": "^4.0.8",

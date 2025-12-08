@@ -10,6 +10,16 @@ export default [
 	},
 	{
 		"id": "1yO-PVi-sWz6DO6JXwogr0uRZfFOMbVB5rD5BY-XSv1A",
+		"gid": "140247294",
+		"filepath": "src/lib/data/china-soy-imports-by-country-annual.csv"
+	},
+	{
+		"id": "1yO-PVi-sWz6DO6JXwogr0uRZfFOMbVB5rD5BY-XSv1A",
+		"gid": "555032233",
+		"filepath": "src/lib/data/china-soy-imports-by-country-monthly.csv"
+	},
+	{
+		"id": "1yO-PVi-sWz6DO6JXwogr0uRZfFOMbVB5rD5BY-XSv1A",
 		"gid": "167939714",
 		"filepath": "src/lib/data/ports.csv"
 	}

@@ -1,91 +1,92 @@
 <script>
     import * as d3 from "d3";
     import { fade } from "svelte/transition";
-    import chinaFoodImports from "../data/china-food-imports-by-country.csv";
+    import { onMount } from "svelte";
+    import chinaFoodImportsAnnual from "../data/china-soy-imports-by-country-annual.csv";
+    import chinaFoodImportsMonthly from "../data/china-soy-imports-by-country-monthly.csv";
     import getValueFromCSSVar from "../utils/getValueFromCSSVar";
 
     let { activeId } = $props();
+    let areasGroup;
+    let mounted = $state(false);
 
-    // Parse all data
-    const allData = chinaFoodImports.map((d) => ({
-        ...d,
-        value: +d.value,
-        share: +d.share,
-        year: +d.year,
-    }));
+    onMount(() => {
+        mounted = true;
+    });
 
-    const usColor = getValueFromCSSVar("--color-theme-us");
-    const latamColor = getValueFromCSSVar("--color-theme-latam");
-    const otherColor = getValueFromCSSVar("--color-theme-other");
+    // Helper function to parse monthly date from "09/2024" format
+    const parseMonthlyDate = (monthStr) => {
+        const [month, year] = monthStr.split("/");
+        return new Date(+year, +month - 1, 1); // month is 0-indexed in Date
+    };
 
-    // Get unique years and partners
-    const years = [...new Set(allData.map((d) => d.year))].sort();
-    const allPartners = [...new Set(allData.map((d) => d.partner))];
+    // Select and parse data based on view
+    const allData = $derived.by(() => {
+        const rawData =
+            activeId === "china_soy_chart_monthly"
+                ? chinaFoodImportsMonthly
+                : chinaFoodImportsAnnual;
 
-    // Determine which partners to show based on activeId
-    const visiblePartners = $derived.by(() => {
-        if (activeId === "us_china_chart") {
-            return ["United States"];
-        } else if (activeId === "latam_china_chart") {
-            return allPartners;
+        if (activeId === "china_soy_chart_monthly") {
+            // Parse monthly data
+            return rawData.map((d) => ({
+                ...d,
+                value: +d.value,
+                share: +d.share,
+                date: parseMonthlyDate(d.month),
+                month: d.month, // Keep original for display
+            }));
         } else {
-            return [];
+            // Parse annual data
+            return rawData.map((d) => ({
+                ...d,
+                value: +d.value,
+                share: +d.share,
+                date: new Date(+d.year, 0, 1), // Convert year to date
+                year: +d.year,
+            }));
         }
     });
 
-    // Create color scale with custom scheme
+    const usColor = getValueFromCSSVar("--color-theme-us");
+    const latamColor = getValueFromCSSVar("--color-theme-latam");
+
+    // Get unique dates
+    const dates = $derived.by(() => {
+        return [...new Set(allData.map((d) => d.date.getTime()))]
+            .map((t) => new Date(t))
+            .sort((a, b) => a - b);
+    });
+
+    // Partners are fixed: US and Brazil
+    const partners = ["United States", "Brazil"];
+
+    // Create color scale for US and Brazil
     const getCountryColor = (partner) => {
-        if (activeId === "us_china_chart") {
-            // For US view: only US gets color, everything else is gray
-            return partner === "United States" ? usColor : otherColor;
-        } else if (activeId === "latam_china_chart") {
-            // For Latin America view: US and Latin American countries get colors, others are gray
-            if (partner === "United States") {
-                return usColor; // Blue for US
-            } else if (
-                [
-                    "Brazil",
-                    "Argentina",
-                    "Chile",
-                    "Peru",
-                    "Colombia",
-                    "Mexico",
-                    "Uruguay",
-                    "Paraguay",
-                    "Ecuador",
-                    "Bolivia",
-                    "Venezuela",
-                ].includes(partner)
-            ) {
-                return latamColor; // Green for Latin American countries
-            } else {
-                return otherColor; // Gray for others
-            }
-        } else {
-            // Default: everything gray
-            return otherColor;
-        }
+        return partner === "United States" ? usColor : latamColor;
     };
 
     // Chart dimensions
-    const margin = { top: 300, right: 20, bottom: 300, left: 40 };
+    const margin = { top: 50, right: 20, bottom: 30, left: 40 };
     let width = $state(400);
-    let height = $state(300);
+    let height = $state(500);
     const innerWidth = $derived(width - margin.left - margin.right);
     const innerHeight = $derived(height - margin.top - margin.bottom);
 
     // Create scales
     const xScale = $derived.by(() =>
-        d3.scaleLinear().domain(d3.extent(years)).range([0, innerWidth]),
+        d3.scaleTime().domain(d3.extent(dates)).range([0, innerWidth]),
     );
 
     const yDomain = $derived.by(() => {
-        // Calculate the sum of all countries for each year, then take the maximum
-        const yearlyTotals = years.map((year) => {
-            const yearData = allData.filter((d) => d.year === year);
-            return d3.sum(yearData, (d) => d.share);
+        // Calculate the sum of all countries for each date, then take the maximum
+        const dateTotals = dates.map((date) => {
+            const dateData = allData.filter(
+                (d) => d.date.getTime() === date.getTime(),
+            );
+            return d3.sum(dateData, (d) => d.share);
         });
-        const maxTotal = d3.max(yearlyTotals);
+        const maxTotal = d3.max(dateTotals);
         return [0, maxTotal];
     });
 
@@ -93,25 +94,27 @@
         return d3.scaleLinear().domain(yDomain).range([innerHeight, 0]);
     });
 
-    // Prepare data for stacked area chart using ALL partners
+    // Prepare data for stacked area chart (US and Brazil only)
     const stackedData = $derived.by(() => {
         return d3
             .stack()
-            .keys(allPartners)
+            .keys(partners)
             .value((d, key) => {
                 const partnerData = d[key];
                 return partnerData ? partnerData.share : 0;
             })(
-            years.map((year) => {
-                const yearData = {};
-                allPartners.forEach((partner) => {
+            dates.map((date) => {
+                const dateData = {};
+                partners.forEach((partner) => {
                     const dataPoint = allData.find(
-                        (d) => d.year === year && d.partner === partner,
+                        (d) =>
+                            d.date.getTime() === date.getTime() &&
+                            d.partner === partner,
                     );
-                    yearData[partner] = dataPoint || { share: 0 };
+                    dateData[partner] = dataPoint || { share: 0 };
                 });
-                yearData.year = year;
-                return yearData;
+                dateData.date = date;
+                return dateData;
             }),
         );
     });
@@ -120,7 +123,7 @@
     const area = $derived.by(() => {
         return d3
             .area()
-            .x((d) => xScale(d.data.year))
+            .x((d) => xScale(d.data.date))
             .y0((d) => yScale(d[0]))
             .y1((d) => yScale(d[1]))
             .curve(d3.curveMonotoneX);
@@ -130,7 +133,7 @@
     const initialArea = $derived.by(() => {
         return d3
             .area()
-            .x((d) => xScale(d.data.year))
+            .x((d) => xScale(d.data.date))
             .y0((d) => yScale(0))
             .y1((d) => yScale(0))
             .curve(d3.curveMonotoneX);
@@ -142,37 +145,90 @@
             key: d.key,
             path: area(d),
             fill: getCountryColor(d.key),
-            isHighlighted: visiblePartners.includes(d.key),
         }));
+    });
+
+    // Create combined area path for masking (entire stacked area shape)
+    const combinedAreaPath = $derived.by(() => {
+        if (stackedData.length === 0 || dates.length === 0) return "";
+
+        // Get the top stack (last one, which has the highest y values)
+        const topStack = stackedData[stackedData.length - 1];
+
+        // Create area generator that goes from bottom (innerHeight) to top of stack
+        const combinedArea = d3
+            .area()
+            .x((d) => xScale(d.data.date))
+            .y0(() => innerHeight) // Always start from bottom
+            .y1((d) => yScale(d[1])) // Top of the stack
+            .curve(d3.curveMonotoneX);
+
+        return combinedArea(topStack);
     });
 
     // Generate axis data
     const xAxisData = $derived.by(() => {
-        return years.map((year) => ({
-            value: year,
-            x: xScale(year),
-        }));
+        if (activeId === "china_soy_chart_monthly") {
+            // For monthly view, show formatted month/year labels with fewer labels
+            const monthAbbreviations = [
+                "Jan.",
+                "Feb.",
+                "Mar.",
+                "Apr.",
+                "May",
+                "Jun.",
+                "Jul.",
+                "Aug.",
+                "Sep.",
+                "Oct.",
+                "Nov.",
+                "Dec.",
+            ];
+
+            // Show every 3 months to reduce clutter
+            return dates
+                .filter(
+                    (date, index) =>
+                        index % 3 === 0 || index === dates.length - 1,
+                ) // Show every 3rd month plus the last one
+                .map((date) => {
+                    const month = date.getMonth();
+                    const year = date.getFullYear();
+                    return {
+                        value: date,
+                        label: `${monthAbbreviations[month]} ${year}`,
+                        x: xScale(date),
+                    };
+                });
+        } else {
+            // For annual view, show year labels
+            return dates.map((date) => ({
+                value: date,
+                label: String(date.getFullYear()),
+                x: xScale(date),
+            }));
+        }
     });
 
     const yAxisData = $derived.by(() => {
         const ticks = yScale.ticks(5);
-        return ticks.map((tick) => ({
-            value: tick,
-            y: yScale(tick),
-            label: d3.format(".0%")(tick),
-        }));
+        return ticks
+            .filter((tick) => tick !== 0) // Remove 0% from y-axis
+            .map((tick) => ({
+                value: tick,
+                y: yScale(tick),
+                label: d3.format(".0%")(tick),
+            }));
     });
 
     // Title text
     const titleText = $derived.by(() => {
-        return activeId === "us_china_chart"
-            ? "US Share of China Food Imports"
-            : "China Food Import Shares by Country";
+        return "Share of China soybean imports";
     });
 
     // Legend data
     const legendData = $derived.by(() => {
-        return visiblePartners.slice(0, 6).map((partner, i) => ({
+        return partners.map((partner, i) => ({
             partner,
             color: getCountryColor(partner),
             y: i * 18,
@@ -180,151 +236,201 @@
     });
 
     // Trump administration overlay data
-    const trumpOverlay = $derived.by(() => {
-        const startYear = 2016;
-        const endYear = 2020;
-        const startX = xScale(startYear);
-        const endX = xScale(endYear);
-        const width = endX - startX;
+    const trumpOverlays = $derived.by(() => {
+        const overlays = [];
 
-        return {
-            x: startX,
-            width: width,
-            label: "First Trump administration",
-        };
+        if (activeId === "china_soy_chart_annual") {
+            // First Trump administration for annual view
+            const startDate = new Date(2016, 0, 1);
+            const endDate = new Date(2020, 0, 1);
+            const startX = xScale(startDate);
+            const endX = xScale(endDate);
+            const width = endX - startX;
+
+            if (width > 0) {
+                overlays.push({
+                    x: startX,
+                    width: width,
+                    label: "First Trump administration",
+                });
+            }
+        } else if (activeId === "china_soy_chart_monthly") {
+            // Second Trump administration for monthly view (starts January 2025)
+            const startDate = new Date(2025, 0, 1);
+            const endDate =
+                dates.length > 0
+                    ? dates[dates.length - 1]
+                    : new Date(2025, 8, 1); // Use last date in data or September 2025
+            const startX = xScale(startDate);
+            const endX = xScale(endDate);
+            const width = endX - startX;
+
+            if (width > 0) {
+                overlays.push({
+                    x: startX,
+                    width: width,
+                    label: "Second Trump administration",
+                });
+            }
+        }
+
+        return overlays;
     });
 
-    const showTrumpOverlay = $derived.by(() => {
-        return activeId === "us_china_chart" && trumpOverlay.width > 0;
+    const showTrumpOverlays = $derived.by(() => {
+        return trumpOverlays.length > 0;
     });
 </script>
 
-<div
-    class="area-chart-container"
-    bind:clientWidth={width}
-    bind:clientHeight={height}
-    transition:fade
->
-    <svg {width} {height}>
-        <g transform="translate({margin.left},{margin.top})">
-            <!-- Areas -->
-            {#each areaPaths as areaPath}
-                <path
-                    class="area"
-                    class:highlighted={areaPath.isHighlighted}
-                    d={areaPath.path}
-                    fill={areaPath.fill}
-                    style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));"
-                />
-            {/each}
-
-            <!-- X Axis -->
-            <g class="axis axis-x" transform="translate(0,{innerHeight})">
-                {#each xAxisData as tick (tick.value)}
-                    <g transform="translate({tick.x},0)">
-                        <line y2="6" stroke="#e5e7eb" stroke-width="1" />
-                        <text
-                            y="9"
-                            dy="0.71em"
-                            text-anchor="middle"
-                            style="font-size: 11px; font-weight: 500; fill: {otherColor};"
-                        >
-                            {tick.value}
-                        </text>
-                    </g>
-                {/each}
-            </g>
-
-            <!-- Y Axis -->
-            <g class="axis axis-y">
-                {#each yAxisData as tick (tick.value)}
-                    <g transform="translate(0,{tick.y})">
-                        <line
-                            x2="-{innerWidth}"
-                            stroke="#f3f4f6"
-                            stroke-width="1"
-                        />
-                        <text
-                            x="-8"
-                            dy="0.32em"
-                            text-anchor="end"
-                            style="font-size: 11px; font-weight: 500; fill: {otherColor};"
-                        >
-                            {tick.label}
-                        </text>
-                    </g>
-                {/each}
-            </g>
-
-            <!-- Trump Administration Overlay -->
-
-            <g
-                class="trump-overlay-container"
-                opacity={showTrumpOverlay ? 1 : 0}
-            >
-                <rect
-                    class="trump-overlay"
-                    x={trumpOverlay.x}
-                    y="0"
-                    width={trumpOverlay.width}
-                    height={innerHeight}
-                />
-
-                <line
-                    x1={trumpOverlay.x}
-                    x2={trumpOverlay.x}
-                    y1="0"
-                    y2={innerHeight}
-                    class="trump-overlay-line"
-                />
-
-                <line
-                    x1={trumpOverlay.x + trumpOverlay.width}
-                    x2={trumpOverlay.x + trumpOverlay.width}
-                    y1="0"
-                    y2={innerHeight}
-                    class="trump-overlay-line"
-                />
-
-                <text
-                    class="trump-label"
-                    x={trumpOverlay.x + trumpOverlay.width / 2}
-                    y={innerHeight / 2}
+<div class="area-chart-wrapper" transition:fade={{ duration: 250 }}>
+    {#if mounted}
+        <div class="area-chart-inner">
+            {#key activeId}
+                <div
+                    class="area-chart-container"
+                    bind:clientWidth={width}
+                    bind:clientHeight={height}
+                    in:fade={{ duration: 500 }}
+                    out:fade={{ duration: 500 }}
                 >
-                    {trumpOverlay.label}
-                </text>
-            </g>
-        </g>
+                    <svg {width} {height}>
+                        <g transform="translate({margin.left},{margin.top})">
+                            <!-- Mask definition for overlay -->
+                            <defs>
+                                <mask id="area-mask">
+                                    <!-- Black background hides everything -->
+                                    <rect
+                                        width={innerWidth}
+                                        height={innerHeight}
+                                        fill="black"
+                                    />
+                                    <!-- White shape shows through (the stacked areas) -->
+                                    <path d={combinedAreaPath} fill="white" />
+                                </mask>
+                            </defs>
 
-        <!-- Title -->
-        <text class="chart-title" x={width / 2} y={margin.top - 30}>
-            Share of China food imports, by top 10 countries
-        </text>
+                            <!-- Areas -->
+                            {#each areaPaths as areaPath}
+                                <path
+                                    class="area"
+                                    d={areaPath.path}
+                                    fill={areaPath.fill}
+                                />
+                            {/each}
 
-        <!-- Legend -->
-        <!-- {#if legendData.length > 0}
-            <g class="legend" transform="translate({width - 120}, 40)">
-                {#each legendData as item, i (item.partner)}
-                    <g class="legend-item" transform="translate(0, {item.y})">
-                        <rect
-                            width="14"
-                            height="14"
-                            rx="2"
-                            fill={item.color}
-                            style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));"
-                        />
+                            <!-- X Axis -->
+                            <g
+                                class="axis axis-x"
+                                transform="translate(0,{innerHeight})"
+                            >
+                                {#each xAxisData as tick (tick.value)}
+                                    <g transform="translate({tick.x},0)">
+                                        <line
+                                            y2="6"
+                                            stroke="#e5e7eb"
+                                            stroke-width="1"
+                                        />
+                                        <text
+                                            y="9"
+                                            dy="0.71em"
+                                            text-anchor="middle"
+                                        >
+                                            {tick.label}
+                                        </text>
+                                    </g>
+                                {/each}
+                            </g>
+
+                            <!-- Y Axis -->
+                            <g class="axis axis-y">
+                                {#each yAxisData as tick (tick.value)}
+                                    <g transform="translate(0,{tick.y})">
+                                        <line
+                                            x2="-{innerWidth}"
+                                            stroke="#f3f4f6"
+                                            stroke-width="1"
+                                        />
+                                        <text
+                                            x="-8"
+                                            dy="0.32em"
+                                            text-anchor="end"
+                                        >
+                                            {tick.label}
+                                        </text>
+                                    </g>
+                                {/each}
+                            </g>
+
+                            <!-- Trump Administration Overlays -->
+                            {#if showTrumpOverlays}
+                                {#each trumpOverlays as overlay}
+                                    <g
+                                        class="trump-overlay-container"
+                                        opacity={1}
+                                    >
+                                        <rect
+                                            class="trump-overlay"
+                                            x={overlay.x}
+                                            y="0"
+                                            width={overlay.width}
+                                            height={innerHeight}
+                                            mask="url(#area-mask)"
+                                        />
+
+                                        <line
+                                            x1={overlay.x}
+                                            x2={overlay.x}
+                                            y1="0"
+                                            y2={innerHeight}
+                                            class="trump-overlay-line"
+                                        />
+
+                                        <line
+                                            x1={overlay.x + overlay.width}
+                                            x2={overlay.x + overlay.width}
+                                            y1="0"
+                                            y2={innerHeight}
+                                            class="trump-overlay-line"
+                                        />
+
+                                        <text
+                                            class="trump-label"
+                                            x={overlay.x + overlay.width / 2}
+                                            y={innerHeight / 2}
+                                        >
+                                            {overlay.label}
+                                        </text>
+                                    </g>
+                                {/each}
+                            {/if}
+
+                            <!-- Country Labels -->
+                            <!-- {#each countryLabels as label}
+                    <text
+                        class="country-label"
+                        x={label.x}
+                        y={label.y}
+                        fill={label.color}
+                        text-anchor="middle"
+                    >
+                        {label.country}
+                    </text>
+                {/each} -->
+                        </g>
+
+                        <!-- Title -->
                         <text
-                            x="20"
-                            y="10"
-                            style="font-size: 11px; font-weight: 500; fill: #374151;"
+                            class="chart-title"
+                            x={width / 2}
+                            y={margin.top - 30}
                         >
-                            {item.partner}
+                            Share of China soybean imports
                         </text>
-                    </g>
-                {/each}
-            </g>
-        {/if} -->
-    </svg>
+                    </svg>
+                </div>
+            {/key}
+        </div>
+    {/if}
 </div>
 
 <style lang="scss">
@@ -336,7 +442,7 @@
         text-anchor: middle;
     }
 
-    .area-chart-container {
+    .area-chart-wrapper {
         width: 100%;
         height: 100%;
         position: absolute;
@@ -345,11 +451,20 @@
         background: #fff;
         z-index: 100;
         box-sizing: border-box;
-        border-radius: 12px;
-        box-shadow:
-            0 4px 6px -1px rgba(0, 0, 0, 0.1),
-            0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
 
+    .area-chart-inner {
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+
+    .area-chart-container {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -363,6 +478,7 @@
     .area {
         stroke: rgba(255, 255, 255, 0.8);
         stroke-width: 1.5;
+        opacity: 0.8;
         transition: fill 0.3s ease;
     }
 
@@ -370,25 +486,20 @@
         transition: opacity 0.3s ease;
         .trump-overlay {
             pointer-events: none;
-            fill: var(--color-gray-100);
+            fill: var(--color-gray-1000);
             stroke-width: 0;
             opacity: 0.25;
         }
 
-        .trump-overlay-line {
-            stroke: var(--color-gray-1000);
-            stroke-width: 2;
-            stroke-dasharray: 2, 2;
-        }
-
         .trump-label {
-            font-family: var(--font-body);
-            pointer-events: none;
-            font-size: 18px;
-            font-weight: 500;
-            fill: var(--color-gray-1000);
-            font-style: italic;
+            font-family: var(--font-heading);
+            font-size: 16px;
+            // font-weight: 600;
+            stroke: #ddd;
+            paint-order: stroke;
+            stroke-width: 4;
             text-anchor: middle;
+            pointer-events: none;
         }
     }
 
@@ -396,13 +507,13 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
             sans-serif;
 
-        &-x {
-            text {
-                font-size: 11px;
-                font-weight: 500;
-                fill: #cccccc;
-            }
+        text {
+            font-size: 11px;
+            font-weight: 500;
+            fill: var(--color-gray-500);
+        }
 
+        &-x {
             .domain {
                 stroke: #e5e7eb;
                 stroke-width: 1;
@@ -415,12 +526,6 @@
         }
 
         &-y {
-            text {
-                font-size: 11px;
-                font-weight: 500;
-                fill: #cccccc;
-            }
-
             .domain {
                 stroke: #e5e7eb;
                 stroke-width: 1;

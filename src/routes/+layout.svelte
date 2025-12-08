@@ -6,6 +6,12 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link
+		href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+		rel="stylesheet"
+	/>
 </svelte:head>
 
 {@render children?.()}
@@ -51,8 +57,6 @@
 			black
 		);
 
-
-		
 		/* Secondary colors */
 		--color-theme-color-secondary: var(
 			--newspack-theme-color-secondary,
@@ -89,11 +93,9 @@
 		--color-gray-800: #373737;
 		--color-gray-900: #262626;
 		--color-gray-1000: #191919;
-		
 
 		--color-theme-us: #2a7ac2;
 		--color-theme-latam: var(--color-theme-color-secondary);
 		--color-theme-other: var(--color-gray-300);
-
 	}
 </style>
