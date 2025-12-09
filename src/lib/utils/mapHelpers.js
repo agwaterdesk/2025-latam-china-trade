@@ -5,9 +5,9 @@
 import bbox from "@turf/bbox";
 import us_china_north from "../data/us_china_north.json";
 import us_china_south from "../data/us_china_south.json";
-import shippingLanesLatAmChina from "../data/Shipping_Lanes_LatAm_China.json";
-import shippingLanesChancayChina from "../data/Shipping_Lanes_Chancay_China.json";
-import shippingLanesOldChina from "../data/Shipping_Lanes_Old_China.json";
+import santos_china from "../data/santos_china.json";
+import latam_china_old from "../data/latam_china_old.json";
+import latam_china_new from "../data/latam_china_new.json";
 import ports from "../data/ports.json";
 import getValueFromCSSVar from "./getValueFromCSSVar";
 
@@ -27,10 +27,9 @@ export { ports };
 
 // Map bounds keys to their corresponding GeoJSON data
 export const boundsGeoJsonMap = {
-    latam_china: shippingLanesLatAmChina,
+    santos_china: santos_china,
     us_china: us_china_north,
-    china_latam_chancay_route: shippingLanesChancayChina,
-    old_china: shippingLanesOldChina,
+    china_latam_chancay_route: latam_china_new,
     latam_ports: ports,
 };
 
@@ -38,45 +37,9 @@ export const boundsGeoJsonMap = {
 export const shippingLanesDataMap = {
     us_china_north: us_china_north,
     us_china_south: us_china_south,
-    latam_china: shippingLanesLatAmChina,
-    china_latam_chancay_route: shippingLanesChancayChina,
-    old_china: shippingLanesOldChina,
-};
-
-// Hardcoded port coordinates by shipping lane type
-// Each port can have: name, coordinates, and color
-export const portsByShippingLane = {
-    us_china: [
-        {
-            name: "Gulf Coast export terminals",
-            coordinates: [-89.799323, 29.344631],
-            color: usColor,
-        },
-        {
-            name: "Pacific Northwest export terminals",
-            coordinates: [-124.835138, 48.484726],
-            color: usColor,
-        },
-        {
-            name: "Southern China ports",
-            coordinates: [114.391855, 22.26097],
-            color: chinaColor,
-        },
-        {
-            name: "Northern China ports",
-            coordinates: [117.9907, 38.834611],
-            color: chinaColor,
-        },
-    ],
-    latam_china: [
-        // Add LatAm-China ports here when needed
-    ],
-    china_latam_chancay_route: [
-        // Add Chancay-China ports here when needed
-    ],
-    old_china: [
-        // Add old China ports here when needed
-    ],
+    santos_china: santos_china,
+    latam_china_old: latam_china_old,
+    latam_china_new: latam_china_new,
 };
 
 // ============================================================================
@@ -404,13 +367,14 @@ export const extractPortPoints = (features) => {
 };
 
 /**
- * Get ports for a shipping lane type as GeoJSON FeatureCollection (for labels)
- * @param {string} shippingLanesType - Type of shipping lane
+ * Get ports for labels from view's layer configuration
+ * @param {Object} view - View configuration object
  * @returns {Object} GeoJSON FeatureCollection of port points
  */
-export const getPortLabelsForShippingLane = (shippingLanesType) => {
-    const ports = portsByShippingLane[shippingLanesType];
-    if (!ports || ports.length === 0) {
+export const getPortLabelsForShippingLane = (view) => {
+    const ports = view?.layers?.ports;
+    
+    if (!Array.isArray(ports) || ports.length === 0) {
         return { type: "FeatureCollection", features: [] };
     }
     
@@ -430,70 +394,30 @@ export const getPortLabelsForShippingLane = (shippingLanesType) => {
 };
 
 /**
- * Get port markers for a shipping lane type as GeoJSON FeatureCollection (for port circles)
- * @param {string|Array<string>|Array<{id: string, color: string}>} shippingLanesConfig - 
- *   Single type string, array of type strings, or array of objects with id and color
+ * Get port markers from view's layer configuration
+ * @param {Object} view - View configuration object
  * @returns {Object} GeoJSON FeatureCollection of port marker points with colors
  */
-export const getPortMarkersForShippingLane = (shippingLanesConfig) => {
-    if (!shippingLanesConfig) {
+export const getPortMarkersForShippingLane = (view) => {
+    const ports = view?.layers?.ports;
+    
+    if (!Array.isArray(ports) || ports.length === 0) {
         return { type: "FeatureCollection", features: [] };
     }
-
-    // Normalize to array of shipping lane type strings
-    let laneTypes = [];
     
-    if (typeof shippingLanesConfig === "string") {
-        laneTypes = [shippingLanesConfig];
-    } else if (Array.isArray(shippingLanesConfig)) {
-        laneTypes = shippingLanesConfig.map((item) => {
-            if (typeof item === "string") {
-                return item;
-            }
-            return item.id; // Extract id from object config
-        });
-    }
+    const features = ports.map((port) => ({
+        type: "Feature",
+        geometry: {
+            type: "Point",
+            coordinates: port.coordinates,
+        },
+        properties: {
+            name: port.name,
+            color: port.color,
+        },
+    }));
     
-    const allPorts = [];
-    const seenPorts = new Set(); // Track ports by coordinates to avoid duplicates
-    
-    laneTypes.forEach((laneType) => {
-        // Try exact match first
-        let ports = portsByShippingLane[laneType];
-        
-        // If no exact match, try fallback by removing suffix (e.g., us_china_north -> us_china)
-        if (!ports || ports.length === 0) {
-            const parts = laneType.split('_');
-            if (parts.length > 2) {
-                // Try with first two parts (e.g., us_china from us_china_north)
-                const fallbackKey = parts.slice(0, 2).join('_');
-                ports = portsByShippingLane[fallbackKey];
-            }
-        }
-        
-        if (ports && ports.length > 0) {
-            ports.forEach((port) => {
-                // Create a unique key for this port to avoid duplicates
-                const portKey = `${port.coordinates[0]},${port.coordinates[1]}`;
-                if (!seenPorts.has(portKey)) {
-                    seenPorts.add(portKey);
-                    allPorts.push({
-                        type: "Feature",
-                        geometry: {
-                            type: "Point",
-                            coordinates: port.coordinates,
-                        },
-                        properties: {
-                            name: port.name,
-                            color: port.color,
-                        },
-                    });
-                }
-            });
-        }
-    });
-    
-    return { type: "FeatureCollection", features: allPorts };
+    return { type: "FeatureCollection", features };
 };
 
 // ============================================================================
@@ -594,8 +518,7 @@ export const layerConfigs = [
         sourceId: "shipping-lane-ports",
         layerId: "shipping-lane-ports",
         getData: (view) => {
-            const shippingLanesTypes = view?.layers?.shippingLanes;
-            return getPortMarkersForShippingLane(shippingLanesTypes);
+            return getPortMarkersForShippingLane(view);
         },
         type: "circle",
         layout: {
@@ -616,9 +539,7 @@ export const layerConfigs = [
         sourceId: "port-labels",
         layerId: "port-labels",
         getData: (view) => {
-            const portLabelsType = view?.layers?.portLabels;
-            if (!portLabelsType) return { type: "FeatureCollection", features: [] };
-            return getPortLabelsForShippingLane(portLabelsType);
+            return getPortLabelsForShippingLane(view);
         },
         type: "symbol",
         layout: {
@@ -636,7 +557,7 @@ export const layerConfigs = [
             "text-halo-blur": 1,
         },
         getVisibility: (view) => {
-            return view?.layers?.portLabels ? "visible" : "none";
+            return view?.layers?.ports ? "visible" : "none";
         },
     },
     {

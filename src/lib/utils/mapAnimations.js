@@ -120,9 +120,8 @@ export class ShippingLaneAnimator {
         this.stopAnimation();
         this.animationStartTime = performance.now();
 
-        // Get port points from portsByShippingLane instead of extracting from path
-        const shippingLanesTypes = view?.layers?.shippingLanes;
-        const allPortPoints = getPortMarkersForShippingLane(shippingLanesTypes).features;
+        // Get port points from view's layer configuration
+        const allPortPoints = getPortMarkersForShippingLane(view).features;
 
         this.currentAnimationData = {
             source,
@@ -217,8 +216,8 @@ export class ShippingLaneAnimator {
 
             this.currentAnimationData.source.setData(partialData);
 
-            // Update port markers - show all ports from portsByShippingLane
-            // Since ports are now manually defined, we show them all immediately
+            // Update port markers - show all ports from view's layer configuration
+            // Since ports are now defined in the view, we show them all immediately
             if (
                 this.currentAnimationData.portMarkersSource &&
                 this.currentAnimationData.allPortPoints
@@ -279,7 +278,7 @@ export class ShippingLaneAnimator {
         };
         source.setData(emptyData);
 
-        // Show all ports immediately (ports are now manually defined in portsByShippingLane)
+        // Show all ports immediately (ports are now defined in the view's layer configuration)
         if (this.portMarkersSource && this.currentAnimationData.allPortPoints) {
             const initialPortData = {
                 type: "FeatureCollection",

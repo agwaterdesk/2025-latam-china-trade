@@ -7,7 +7,6 @@
     import {
         boundsGeoJsonMap,
         shippingLanesDataMap,
-        portsByShippingLane,
         calculateBoundsFromGeoJson,
         extractPortPoints,
         generateStaticImageUrl,
@@ -132,7 +131,7 @@
                     shippingLaneAnimator.animateLine(source, newData, view);
                 } else if (config.sourceId === "shipping-lane-ports") {
                     // Handle port markers separately
-                    // Use the layer config's getData method to get ports from portsByShippingLane
+                    // Use the layer config's getData method to get ports from view's layer configuration
                     const portMarkersData = config.getData(view);
 
                     if (
@@ -256,6 +255,7 @@
                     const bounds = calculateBoundsFromGeoJson(
                         currentView.bounds,
                     );
+                    console.log("bounds", bounds);
                     if (bounds) {
                         map.fitBounds(bounds, {
                             padding: 50,
