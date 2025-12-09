@@ -67,7 +67,7 @@
     };
 
     // Chart dimensions
-    const margin = { top: 50, right: 20, bottom: 30, left: 40 };
+    const margin = { top: 60, right: 20, bottom: 30, left: 40 };
     let width = $state(400);
     let height = $state(500);
     const innerWidth = $derived(width - margin.left - margin.right);
@@ -222,18 +222,11 @@
     });
 
     // Title text
-    const titleText = $derived.by(() => {
-        return "Share of China soybean imports";
-    });
-
-    // Legend data
-    const legendData = $derived.by(() => {
-        return partners.map((partner, i) => ({
-            partner,
-            color: getCountryColor(partner),
-            y: i * 18,
-        }));
-    });
+    const descriptionText = $derived(
+        activeId === "china_soy_chart_annual"
+            ? "Annually, 2016–2024"
+            : "Monthly, Sept. 2024–Sept. 2025",
+    );
 
     // Trump administration overlay data
     const trumpOverlays = $derived.by(() => {
@@ -403,28 +396,23 @@
                                     </g>
                                 {/each}
                             {/if}
-
-                            <!-- Country Labels -->
-                            <!-- {#each countryLabels as label}
-                    <text
-                        class="country-label"
-                        x={label.x}
-                        y={label.y}
-                        fill={label.color}
-                        text-anchor="middle"
-                    >
-                        {label.country}
-                    </text>
-                {/each} -->
                         </g>
 
                         <!-- Title -->
                         <text
                             class="chart-title"
                             x={width / 2}
-                            y={margin.top - 30}
+                            y={margin.top - 40}
                         >
-                            Share of China soybean imports
+                            Share of China's soybean imports, by country
+                        </text>
+
+                        <text
+                            class="chart-description"
+                            x={width / 2}
+                            y={margin.top - 17}
+                        >
+                            {descriptionText}
                         </text>
                     </svg>
                 </div>
@@ -438,6 +426,13 @@
         font-size: 24px;
         font-weight: 600;
         fill: var(--color-gray-1000);
+        font-family: var(--font-heading);
+        text-anchor: middle;
+    }
+
+    .chart-description {
+        font-size: 14px;
+        fill: var(--color-gray-500);
         font-family: var(--font-heading);
         text-anchor: middle;
     }
