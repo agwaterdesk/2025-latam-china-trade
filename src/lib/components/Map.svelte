@@ -40,6 +40,11 @@
     let fadeOutTimeout = null;
     let markerFadeInTimeout = null;
 
+    // Image cache for Mapbox Static API calls
+    const imageCache = new Map();
+    let containerDimensions = $state({ width: 0, height: 0 });
+    let resizeObserver = null;
+
     // Port label overlay state (for static map views)
     let portLabelOverlayName = $state(null);
     let portLabelMarkerColor = $state(null);
@@ -49,6 +54,53 @@
     const shippingLaneAnimator = new ShippingLaneAnimator();
     const portLabelAnimator = new PortLabelAnimator();
 
+    // Generate cache key for static image based on view and container dimensions
+    const getCacheKey = (view) => {
+        if (!view || !view.center || !view.zoom) return null;
+        const [lon, lat] = view.center;
+        const zoom = view.zoom;
+        return `${lon},${lat},${zoom},${containerDimensions.width},${containerDimensions.height}`;
+    };
+
+    // Fetch and cache static image
+    const getCachedStaticImage = async (view) => {
+        if (!view || view.basemap !== "satellite") return null;
+
+        const cacheKey = getCacheKey(view);
+        if (!cacheKey) return null;
+
+        // Check if image is already cached
+        if (imageCache.has(cacheKey)) {
+            return imageCache.get(cacheKey);
+        }
+
+        // Generate URL and fetch image with current container dimensions
+        const imageUrl = generateStaticImageUrl(view, mapboxToken, containerDimensions);
+        if (!imageUrl) return null;
+
+        try {
+            const response = await fetch(imageUrl);
+            if (!response.ok) {
+                console.error("Failed to fetch static image:", response.statusText);
+                return null;
+            }
+            const blob = await response.blob();
+            const cachedUrl = URL.createObjectURL(blob);
+            imageCache.set(cacheKey, cachedUrl);
+            return cachedUrl;
+        } catch (error) {
+            console.error("Error fetching static image:", error);
+            return null;
+        }
+    };
+
+    // Clear image cache and revoke blob URLs
+    const clearImageCache = () => {
+        imageCache.forEach((url) => {
+            URL.revokeObjectURL(url);
+        });
+        imageCache.clear();
+    };
 
     // Update layers based on view configuration
     const updateLayers = (view) => {
@@ -131,7 +183,7 @@
     };
 
     let controller = {
-        updateView: (view, id) => {
+        updateView: async (view, id) => {
             if (!map) return;
 
             // Use view if available, otherwise fall back to defaultView
@@ -151,13 +203,10 @@
                         clearTimeout(markerFadeInTimeout);
                         markerFadeInTimeout = null;
                     }
-                    // Generate and set the static image URL from view config
-                    const imageUrl = generateStaticImageUrl(
-                        currentView,
-                        mapboxToken,
-                    );
-                    if (imageUrl) {
-                        staticImageOverlayUrl = imageUrl;
+                    // Get cached static image (will fetch if not cached)
+                    const cachedImageUrl = await getCachedStaticImage(currentView);
+                    if (cachedImageUrl) {
+                        staticImageOverlayUrl = cachedImageUrl;
                         // Hide initially, will fade in after map transition
                         staticImageOverlayVisible = false;
                     }
@@ -210,7 +259,7 @@
                     if (bounds) {
                         map.fitBounds(bounds, {
                             padding: 50,
-                            duration: 2000,
+                            duration: currentView.duration || 2000,
                             pitch: currentView.pitch || 0,
                             bearing: currentView.bearing || 0,
                         });
@@ -220,7 +269,7 @@
                     // Use bbox to fit the map to the specified bounds
                     map.fitBounds(currentView.bbox, {
                         padding: 50,
-                        duration: 2000,
+                        duration: currentView.duration || 2000,
                         pitch: currentView.pitch || 0,
                         bearing: currentView.bearing || 0,
                     });
@@ -232,7 +281,7 @@
                         zoom: currentView.zoom || 0,
                         pitch: currentView.pitch || 0,
                         bearing: currentView.bearing || 0,
-                        duration: 2000,
+                        duration: currentView.duration || 2000,
                     });
                     transitionComplete = true;
                 }
@@ -242,14 +291,14 @@
                     markerFadeInTimeout = setTimeout(() => {
                         portMarkerVisible = true;
                         markerFadeInTimeout = null;
-                    }, 1000); // Half of map transition duration
+                    }, currentView.duration / 2); // Half of map transition duration
                 }
 
                 // Fade in static image overlay after map transition completes
                 if (shouldShowStaticOverlay && transitionComplete) {
                     setTimeout(() => {
                         staticImageOverlayVisible = true;
-                    }, 2100); // Match the map transition duration (2000ms) + small delay
+                    }, currentView.duration + 100); // Match the map transition duration (2000ms) + small delay
                 }
 
                 // Handle animated port label (only for non-static map views)
@@ -300,6 +349,46 @@
         if (!mapboxToken) {
             console.warn("Mapbox token not provided");
             return;
+        }
+
+        // Track container dimensions and clear cache when they change
+        const updateContainerDimensions = () => {
+            if (mapContainer) {
+                const rect = mapContainer.getBoundingClientRect();
+                const newDimensions = {
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                };
+                // Check if dimensions actually changed
+                if (
+                    newDimensions.width !== containerDimensions.width ||
+                    newDimensions.height !== containerDimensions.height
+                ) {
+                    // Clear cache when dimensions change
+                    clearImageCache();
+                    containerDimensions = newDimensions;
+                }
+            }
+        };
+
+        // Initial dimension update
+        updateContainerDimensions();
+
+        // Set up resize observer to track container dimension changes
+        if (mapContainer && typeof ResizeObserver !== "undefined") {
+            resizeObserver = new ResizeObserver(() => {
+                updateContainerDimensions();
+            });
+            resizeObserver.observe(mapContainer);
+        } else {
+            // Fallback to window resize if ResizeObserver not available
+            const handleResize = () => {
+                updateContainerDimensions();
+            };
+            window.addEventListener("resize", handleResize);
+            onDestroy(() => {
+                window.removeEventListener("resize", handleResize);
+            });
         }
 
         mapboxgl.accessToken = mapboxToken;
@@ -383,6 +472,12 @@
             clearTimeout(markerFadeInTimeout);
             markerFadeInTimeout = null;
         }
+        if (resizeObserver) {
+            resizeObserver.disconnect();
+            resizeObserver = null;
+        }
+        // Clear image cache and revoke blob URLs
+        clearImageCache();
         if (map) {
             map.remove();
         }
@@ -400,22 +495,21 @@
         />
     {/if}
 
-    {#if (portMarkerVisible && portLabelMarkerColor) || (staticImageOverlayVisible && portLabelOverlayName)}
-        {@const portName = portLabelOverlayName}
-        <div class="port-label-overlay">
-            {#if portMarkerVisible && portLabelMarkerColor}
-                <div 
-                    class="port-marker" 
-                    style="background: {portLabelMarkerColor};"
-                    in:fade={{ duration: 300 }}
-                ></div>
-            {/if}
-            {#if staticImageOverlayVisible && portLabelOverlayName}
-                <div class="port-line"></div>
-                <div class="port-label">{portName}</div>
-            {/if}
-        </div>
-    {/if}
+    <div class="port-label-overlay">
+        {#if portMarkerVisible && portLabelMarkerColor}
+            <div 
+                class="port-marker" 
+                style="background: {portLabelMarkerColor};"
+                in:fade={{ duration: 300 }}
+                out:fade={{ duration: 300 }}
+            ></div>
+        {/if}
+        {#if staticImageOverlayVisible && portLabelOverlayName}
+            {@const portName = portLabelOverlayName}
+            <div class="port-line"></div>
+            <div class="port-label">{portName}</div>
+        {/if}
+    </div>
 </div>
 
 <style lang="scss">

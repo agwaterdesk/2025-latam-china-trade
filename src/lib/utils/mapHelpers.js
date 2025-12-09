@@ -504,17 +504,18 @@ export const getPortMarkersForShippingLane = (shippingLanesConfig) => {
  * Generate Mapbox static image URL from view config
  * @param {Object} view - View configuration object with center and zoom
  * @param {string} mapboxToken - Mapbox access token
+ * @param {Object} dimensions - Optional dimensions object with width and height
  * @returns {string|null} Static image URL or null if invalid
  */
-export const generateStaticImageUrl = (view, mapboxToken) => {
+export const generateStaticImageUrl = (view, mapboxToken, dimensions = null) => {
     if (!view || !view.center || !view.zoom || !mapboxToken) return null;
     
     const [lon, lat] = view.center;
     const zoom = view.zoom;
-    // Use a large size that will scale to fit the container
+    // Use provided dimensions or fallback to default size
     // Using @2x for retina displays
-    const width = 700;
-    const height = 700;
+    const width = dimensions?.width || 700;
+    const height = dimensions?.height || 700;
     
     return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${mapboxToken}`;
 };
