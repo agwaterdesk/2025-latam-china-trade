@@ -16,46 +16,29 @@ export const views = {
             isAnimated: true,
         },
     },
-    china_soy_chart_annual: {
-        bbox: [-258.046875, 14.604847, -72.421875, 50.289339],
-        overlay: true,
-        layers: {
-            shippingLanes: [
-                { id: "us_china_north", color: "#ff6b35" },
-            ],
-            portLabels: "us_china",
-        },
-    },
-    china_soy_chart_annual: {
-        bbox: [-74.882813, -50.928141, 135.770416, 37.198612],
-        layers: {
-            shippingLanes: [
-                { id: "latam_china", color: "#ff6b35" },
-            ],
-        },
-    },
-    latam_china_chart_monthly: {
-        bbox: [-74.882813, -50.928141, 135.770416, 37.198612],
-        layers: {
-            shippingLanes: [
-                { id: "latam_china", color: "#ff6b35" },
-            ],
-        },
-    },
     latam_ports: {
         bounds: "latam_ports",
         layers: {
             latam_ports: true,
         },
     },
+    china_soy_chart_annual: {
+        bounds: "latam_ports",
+    },
+
+    latam_china_chart_monthly: {
+        bounds: "latam_ports",
+    },
+
     port_of_santos: {
-        center: [-46.3021, -23.9655], // Port of Santos, Brazil
+        center: [-46.3021, -23.9655],
         zoom: 15,
         pitch: 0,
         bearing: 0,
+        duration: 3000,
+        direction: "forward",
         basemap: "satellite",
         layers: {
-            latam_ports: true,
             animatedPortLabel: {
                 coordinates: [-46.3021, -23.9655],
                 name: "Port of Santos",
@@ -64,13 +47,16 @@ export const views = {
             },
         },
     },
+    port_of_santos_video: {
+        center: [-46.3021, -23.9655],
+        zoom: 15
+    },
     santos_gateway: {
         bbox: [-74.882813, -50.928141, 135.770416, 37.198612],
         layers: {
             shippingLanes: [
                 { id: "latam_china", color: "#ff6b35" },
             ],
-            latam_ports: true,
             isAnimated: true,
         },
     },
@@ -81,7 +67,6 @@ export const views = {
         bearing: 0,
         basemap: "satellite",
         layers: {
-            latam_ports: false,
             animatedPortLabel: {
                 coordinates: [-77.2731, -11.5843],
                 name: "Port of Chancay",
