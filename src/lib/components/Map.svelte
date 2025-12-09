@@ -1,5 +1,6 @@
 <script>
     import { onMount, onDestroy } from "svelte";
+    import { fade } from "svelte/transition";
     import mapboxgl from "mapbox-gl";
     import "mapbox-gl/dist/mapbox-gl.css";
     import { dev } from "$app/environment";
@@ -10,14 +11,17 @@
         calculateBoundsFromGeoJson,
         extractPortPoints,
         generateStaticImageUrl,
-        getPortsForShippingLane,
+        getPortLabelsForShippingLane,
+        getPortMarkersForShippingLane,
         calculateDistance,
-        calculateCumulativeDistances,
-        calculatePartialCoordinates,
         layerConfigs,
         ports,
         getMergedShippingLanes,
     } from "../utils/mapHelpers.js";
+    import {
+        ShippingLaneAnimator,
+        PortLabelAnimator,
+    } from "../utils/mapAnimations.js";
 
     let { activeId, view, defaultView } = $props();
 
@@ -33,438 +37,30 @@
     // Static image overlay state
     let staticImageOverlayUrl = $state(null);
     let staticImageOverlayVisible = $state(false);
+    let fadeOutTimeout = null;
+    let markerFadeInTimeout = null;
 
     // Port label overlay state (for static map views)
     let portLabelOverlayName = $state(null);
+    let portLabelMarkerColor = $state(null);
+    let portMarkerVisible = $state(false);
 
     // Animation state
-    let animationFrameId = null;
-    let animationStartTime = 0;
-    let currentAnimationData = null;
-    let portMarkersSource = null;
+    const shippingLaneAnimator = new ShippingLaneAnimator();
+    const portLabelAnimator = new PortLabelAnimator();
 
-    // Port label animation state
-    let portLabelAnimationFrameId = null;
-    let portLabelAnimationStartTime = 0;
-    let portLabelAnimationData = null;
-
-    // Stop animation
-    const stopAnimation = () => {
-        if (animationFrameId !== null) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        }
-        currentAnimationData = null;
-    };
-
-    // Stop port label animation
-    const stopPortLabelAnimation = () => {
-        if (portLabelAnimationFrameId !== null) {
-            cancelAnimationFrame(portLabelAnimationFrameId);
-            portLabelAnimationFrameId = null;
-        }
-        portLabelAnimationData = null;
-    };
-
-    // Animate port label (line extending from port circle to label)
-    const animatePortLabel = (portConfig) => {
-        if (!map || !portConfig) return;
-
-        const lineSource = map.getSource("animated-port-label-line");
-        const textSource = map.getSource("animated-port-label-text");
-
-        if (!lineSource || !textSource) return;
-
-        const { coordinates, name, offset = [0, 0.006] } = portConfig;
-        const [portLon, portLat] = coordinates;
-
-        // Calculate line end position (shorter, stops before marker)
-        const [offsetLon, offsetLat] = offset;
-        const lineEndLon = portLon + offsetLon * 0.8; // Line stops at 80% of offset
-        const lineEndLat = portLat + offsetLat * 0.8;
-
-        // Calculate label position (at end of line, with small additional offset upward)
-        const labelLon = lineEndLon;
-        const labelLat = lineEndLat + 0.001; // Small additional offset above line end
-
-        stopPortLabelAnimation();
-
-        const animationDuration = 250;
-        portLabelAnimationStartTime = performance.now();
-        portLabelAnimationData = {
-            lineSource,
-            textSource,
-            portCoordinates: [portLon, portLat],
-            lineEndCoordinates: [lineEndLon, lineEndLat],
-            labelCoordinates: [labelLon, labelLat],
-            name,
-            duration: animationDuration,
-        };
-
-        const animate = (timestamp) => {
-            if (!portLabelAnimationData) return;
-
-            const elapsed = timestamp - portLabelAnimationStartTime;
-            const progress = Math.min(
-                elapsed / portLabelAnimationData.duration,
-                1,
-            );
-
-            // Interpolate line from port to line end (stops before marker)
-            const [portLon, portLat] = portLabelAnimationData.portCoordinates;
-            const [lineEndLon, lineEndLat] =
-                portLabelAnimationData.lineEndCoordinates;
-
-            const currentLon = portLon + (lineEndLon - portLon) * progress;
-            const currentLat = portLat + (lineEndLat - portLat) * progress;
-
-            // Update line (stops before reaching marker)
-            const lineFeature = {
-                type: "Feature",
-                geometry: {
-                    type: "LineString",
-                    coordinates: [
-                        [portLon, portLat],
-                        [currentLon, currentLat],
-                    ],
-                },
-            };
-            lineSource.setData({
-                type: "FeatureCollection",
-                features: [lineFeature],
-            });
-
-            // Show label when line is fully extended
-            if (progress >= 1) {
-                const textFeature = {
-                    type: "Feature",
-                    geometry: {
-                        type: "Point",
-                        coordinates: portLabelAnimationData.labelCoordinates,
-                    },
-                    properties: {
-                        name: portLabelAnimationData.name,
-                    },
-                };
-                textSource.setData({
-                    type: "FeatureCollection",
-                    features: [textFeature],
-                });
-                stopPortLabelAnimation();
-            } else {
-                portLabelAnimationFrameId = requestAnimationFrame(animate);
-            }
-        };
-
-        // Start with empty line
-        lineSource.setData({ type: "FeatureCollection", features: [] });
-        textSource.setData({ type: "FeatureCollection", features: [] });
-
-        // Wait for map transition, then start animation
-        setTimeout(() => {
-            portLabelAnimationStartTime = performance.now();
-            portLabelAnimationFrameId = requestAnimationFrame(animate);
-        }, 2100);
-    };
-
-    // Animate multiple line paths simultaneously based on total path length
-    // Handles both LineString and MultiLineString geometries
-    // MultiLineString segments animate sequentially to appear as one continuous line
-    const animateLine = (source, fullData) => {
-        if (
-            !source ||
-            !fullData ||
-            !fullData.features ||
-            fullData.features.length === 0
-        )
-            return;
-
-        // Process features and group segments by feature
-        const featureGroups = [];
-
-        fullData.features.forEach((feature) => {
-            if (!feature.geometry) return;
-
-            const geometryType = feature.geometry.type;
-
-            if (geometryType === "LineString") {
-                const coordinates = feature.geometry.coordinates;
-                if (coordinates.length > 0) {
-                    const { cumulative, total } =
-                        calculateCumulativeDistances(coordinates);
-                    featureGroups.push({
-                        feature,
-                        geometryType: "LineString",
-                        segments: [
-                            {
-                                coordinates,
-                                cumulativeDistances: cumulative,
-                                totalDistance: total,
-                            },
-                        ],
-                        totalDistance: total,
-                    });
-                }
-            } else if (geometryType === "MultiLineString") {
-                const multiCoordinates = feature.geometry.coordinates;
-                const segments = [];
-                let totalDistance = 0;
-
-                // Process each segment and calculate cumulative distances across all segments
-                multiCoordinates.forEach((lineCoordinates, index) => {
-                    if (lineCoordinates.length > 0) {
-                        const { cumulative, total: segmentTotal } =
-                            calculateCumulativeDistances(lineCoordinates);
-                        segments.push({
-                            coordinates: lineCoordinates,
-                            cumulativeDistances: cumulative,
-                            totalDistance: segmentTotal,
-                            segmentIndex: index,
-                            cumulativeDistanceFromStart: totalDistance, // Distance from start of route
-                        });
-                        totalDistance += segmentTotal;
-                    }
-                });
-
-                if (segments.length > 0) {
-                    featureGroups.push({
-                        feature,
-                        geometryType: "MultiLineString",
-                        segments,
-                        totalDistance,
-                    });
-                }
-            }
-        });
-
-        if (featureGroups.length === 0) return;
-
-        // Use the longest route's total distance to determine animation duration
-        const maxDistance = Math.max(
-            ...featureGroups.map((fg) => fg.totalDistance),
-        );
-        const animationDuration = 1000;
-
-        stopAnimation();
-        animationStartTime = performance.now();
-
-        // Extract all port points from the full data
-        const allPortPoints = extractPortPoints(fullData.features);
-
-        currentAnimationData = {
-            source,
-            featureGroups,
-            maxDistance,
-            duration: animationDuration,
-            allPortPoints,
-            portMarkersSource: portMarkersSource,
-        };
-
-        const animate = (timestamp) => {
-            if (!currentAnimationData) return;
-
-            const elapsed = timestamp - animationStartTime;
-            const progress = Math.min(
-                elapsed / currentAnimationData.duration,
-                1,
-            );
-            const targetDistance = progress * currentAnimationData.maxDistance;
-
-            // Process each feature group
-            const partialFeatures = currentAnimationData.featureGroups.map(
-                ({ feature, geometryType, segments, totalDistance }) => {
-                    // Calculate how far along this route we should be
-                    const routeTargetDistance = progress * totalDistance;
-
-                    if (geometryType === "LineString") {
-                        // Single LineString - animate normally
-                        const segment = segments[0];
-                        const partialCoordinates = calculatePartialCoordinates(
-                            segment.coordinates,
-                            segment.cumulativeDistances,
-                            routeTargetDistance,
-                        );
-
-                        return {
-                            ...feature,
-                            geometry: {
-                                type: "LineString",
-                                coordinates: partialCoordinates,
-                            },
-                        };
-                    } else if (geometryType === "MultiLineString") {
-                        // MultiLineString - animate segments sequentially
-                        const partialSegments = [];
-
-                        for (let i = 0; i < segments.length; i++) {
-                            const segment = segments[i];
-                            const segmentStartDistance =
-                                segment.cumulativeDistanceFromStart;
-                            const segmentEndDistance =
-                                segmentStartDistance + segment.totalDistance;
-
-                            if (routeTargetDistance >= segmentEndDistance) {
-                                // This segment is fully drawn
-                                partialSegments.push(segment.coordinates);
-                            } else if (
-                                routeTargetDistance > segmentStartDistance
-                            ) {
-                                // This segment is partially drawn
-                                const segmentProgress =
-                                    routeTargetDistance - segmentStartDistance;
-                                const partialCoordinates =
-                                    calculatePartialCoordinates(
-                                        segment.coordinates,
-                                        segment.cumulativeDistances,
-                                        segmentProgress,
-                                    );
-                                partialSegments.push(partialCoordinates);
-                                break; // Stop here, subsequent segments haven't started
-                            } else {
-                                // This segment hasn't started yet
-                                break;
-                            }
-                        }
-
-                        return {
-                            ...feature,
-                            geometry: {
-                                type: "MultiLineString",
-                                coordinates: partialSegments,
-                            },
-                        };
-                    }
-                },
-            );
-
-            const partialData = {
-                type: "FeatureCollection",
-                features: partialFeatures,
-            };
-
-            currentAnimationData.source.setData(partialData);
-
-            // Update port markers based on animation progress
-            if (
-                currentAnimationData.portMarkersSource &&
-                currentAnimationData.allPortPoints
-            ) {
-                const visiblePorts = [];
-
-                currentAnimationData.allPortPoints.forEach((portPoint) => {
-                    const isStart = portPoint.properties.type === "start";
-                    const featureIndex = portPoint.properties.featureIndex;
-
-                    // Start ports are always visible
-                    if (isStart) {
-                        visiblePorts.push(portPoint);
-                    } else {
-                        // End ports appear when animation reaches the end of that feature
-                        const featureGroup =
-                            currentAnimationData.featureGroups[featureIndex];
-                        if (featureGroup) {
-                            // Calculate how far along this specific feature should be
-                            // Same logic as in the animation: routeTargetDistance = progress * totalDistance
-                            const routeTargetDistance =
-                                progress * featureGroup.totalDistance;
-                            // Show end port when this feature's animation is complete
-                            if (
-                                routeTargetDistance >=
-                                featureGroup.totalDistance
-                            ) {
-                                visiblePorts.push(portPoint);
-                            }
-                        }
-                    }
-                });
-
-                const portMarkersData = {
-                    type: "FeatureCollection",
-                    features: visiblePorts,
-                };
-
-                currentAnimationData.portMarkersSource.setData(portMarkersData);
-            }
-
-            if (progress < 1) {
-                animationFrameId = requestAnimationFrame(animate);
-            } else {
-                // Ensure all end ports are visible when animation completes
-                if (
-                    currentAnimationData.portMarkersSource &&
-                    currentAnimationData.allPortPoints
-                ) {
-                    const allPorts = currentAnimationData.allPortPoints;
-                    const portMarkersData = {
-                        type: "FeatureCollection",
-                        features: allPorts,
-                    };
-                    currentAnimationData.portMarkersSource.setData(
-                        portMarkersData,
-                    );
-                }
-                stopAnimation();
-            }
-        };
-
-        // Start with empty lines
-        const emptyFeatures = fullData.features.map((feature) => {
-            if (feature.geometry.type === "LineString") {
-                return {
-                    ...feature,
-                    geometry: {
-                        type: "LineString",
-                        coordinates: [],
-                    },
-                };
-            } else if (feature.geometry.type === "MultiLineString") {
-                return {
-                    ...feature,
-                    geometry: {
-                        type: "MultiLineString",
-                        coordinates: feature.geometry.coordinates.map(() => []),
-                    },
-                };
-            }
-            return feature;
-        });
-
-        const emptyData = {
-            type: "FeatureCollection",
-            features: emptyFeatures,
-        };
-        source.setData(emptyData);
-
-        // Show start ports immediately
-        if (portMarkersSource && currentAnimationData.allPortPoints) {
-            const startPorts = currentAnimationData.allPortPoints.filter(
-                (p) => p.properties.type === "start",
-            );
-            const initialPortData = {
-                type: "FeatureCollection",
-                features: startPorts,
-            };
-            portMarkersSource.setData(initialPortData);
-        }
-
-        // Wait for map transition, then start animation
-        setTimeout(() => {
-            animationStartTime = performance.now();
-            animationFrameId = requestAnimationFrame(animate);
-        }, 2100);
-    };
 
     // Update layers based on view configuration
     const updateLayers = (view) => {
         if (!map || !view) return;
 
         const shouldAnimate = view?.layers?.isAnimated === true;
-        console.log("shouldAnimate", view);
+  
 
-        // Get port markers source reference
+        // Get port markers source reference and set it on the animator
         const portMarkersSourceObj = map.getSource("shipping-lane-ports");
         if (portMarkersSourceObj) {
-            portMarkersSource = portMarkersSourceObj;
+            shippingLaneAnimator.setPortMarkersSource(portMarkersSourceObj);
         }
 
         layerConfigs.forEach((config) => {
@@ -481,19 +77,17 @@
                     newData
                 ) {
                     // Don't update data here - animation will handle it
-                    animateLine(source, newData);
+                    shippingLaneAnimator.animateLine(source, newData, view);
                 } else if (config.sourceId === "shipping-lane-ports") {
                     // Handle port markers separately
-                    // Get the shipping lanes data to extract port points from
-                    const shippingLanesTypes = view?.layers?.shippingLanes;
-                    const shippingLanesData =
-                        getMergedShippingLanes(shippingLanesTypes);
+                    // Use the layer config's getData method to get ports from portsByShippingLane
+                    const portMarkersData = config.getData(view);
 
                     if (
                         shouldAnimate &&
-                        shippingLanesData &&
-                        shippingLanesData.features &&
-                        shippingLanesData.features.length > 0
+                        portMarkersData &&
+                        portMarkersData.features &&
+                        portMarkersData.features.length > 0
                     ) {
                         // For animated routes, ports will be managed by animation
                         // Start with empty, animation will populate
@@ -501,25 +95,9 @@
                             type: "FeatureCollection",
                             features: [],
                         });
-                    } else if (
-                        shippingLanesData &&
-                        shippingLanesData.features &&
-                        shippingLanesData.features.length > 0
-                    ) {
-                        // For non-animated routes, show all ports immediately
-                        const portPoints = extractPortPoints(
-                            shippingLanesData.features,
-                        );
-                        source.setData({
-                            type: "FeatureCollection",
-                            features: portPoints,
-                        });
                     } else {
-                        // No shipping lanes data, clear ports
-                        source.setData({
-                            type: "FeatureCollection",
-                            features: [],
-                        });
+                        // For non-animated routes or when no animation, show all ports
+                        source.setData(portMarkersData);
                     }
                 } else if (newData && source.type === "geojson") {
                     // Normal update for non-animated layers
@@ -564,6 +142,15 @@
                     currentView.basemap === "satellite";
 
                 if (shouldShowStaticOverlay) {
+                    // Cancel any pending timeouts
+                    if (fadeOutTimeout) {
+                        clearTimeout(fadeOutTimeout);
+                        fadeOutTimeout = null;
+                    }
+                    if (markerFadeInTimeout) {
+                        clearTimeout(markerFadeInTimeout);
+                        markerFadeInTimeout = null;
+                    }
                     // Generate and set the static image URL from view config
                     const imageUrl = generateStaticImageUrl(
                         currentView,
@@ -574,18 +161,40 @@
                         // Hide initially, will fade in after map transition
                         staticImageOverlayVisible = false;
                     }
-                    // Set port label name for overlay from view config
+                    // Set port label name and marker color for overlay from view config
                     if (currentView.layers?.animatedPortLabel?.name) {
                         portLabelOverlayName =
                             currentView.layers.animatedPortLabel.name;
+                        portLabelMarkerColor =
+                            currentView.layers.animatedPortLabel.markerColor || "#d98e1d";
+                        // Hide marker initially, will fade in at midpoint of map transition
+                        portMarkerVisible = false;
                     } else {
                         portLabelOverlayName = null;
+                        portLabelMarkerColor = null;
+                        portMarkerVisible = false;
                     }
                 } else {
-                    // Hide overlay for other views
-                    staticImageOverlayVisible = false;
-                    staticImageOverlayUrl = null;
+                    // Hide overlay for other views - fade out first, then remove URL
+                    if (staticImageOverlayVisible) {
+                        staticImageOverlayVisible = false;
+                        // Wait for fade-out transition to complete before removing URL
+                        fadeOutTimeout = setTimeout(() => {
+                            staticImageOverlayUrl = null;
+                            fadeOutTimeout = null;
+                        }, 1000); // Match fade-out duration
+                    } else {
+                        // If already hidden, remove immediately
+                        staticImageOverlayUrl = null;
+                    }
+                    // Cancel any pending marker fade-in timeout
+                    if (markerFadeInTimeout) {
+                        clearTimeout(markerFadeInTimeout);
+                        markerFadeInTimeout = null;
+                    }
                     portLabelOverlayName = null;
+                    portLabelMarkerColor = null;
+                    portMarkerVisible = false;
                 }
 
                 // Update all layers based on configuration
@@ -628,6 +237,14 @@
                     transitionComplete = true;
                 }
 
+                // Fade in marker at midpoint of map transition (half of 2000ms = 1000ms)
+                if (shouldShowStaticOverlay && transitionComplete && portLabelMarkerColor) {
+                    markerFadeInTimeout = setTimeout(() => {
+                        portMarkerVisible = true;
+                        markerFadeInTimeout = null;
+                    }, 1000); // Half of map transition duration
+                }
+
                 // Fade in static image overlay after map transition completes
                 if (shouldShowStaticOverlay && transitionComplete) {
                     setTimeout(() => {
@@ -640,10 +257,13 @@
                     currentView.layers?.animatedPortLabel &&
                     !shouldShowStaticOverlay
                 ) {
-                    animatePortLabel(currentView.layers.animatedPortLabel);
+                    portLabelAnimator.animatePortLabel(
+                        map,
+                        currentView.layers.animatedPortLabel,
+                    );
                 } else {
                     // Clear animated port label if not in view
-                    stopPortLabelAnimation();
+                    portLabelAnimator.stopAnimation();
                     const lineSource = map.getSource(
                         "animated-port-label-line",
                     );
@@ -753,8 +373,16 @@
     });
 
     onDestroy(() => {
-        stopAnimation();
-        stopPortLabelAnimation();
+        shippingLaneAnimator.stopAnimation();
+        portLabelAnimator.stopAnimation();
+        if (fadeOutTimeout) {
+            clearTimeout(fadeOutTimeout);
+            fadeOutTimeout = null;
+        }
+        if (markerFadeInTimeout) {
+            clearTimeout(markerFadeInTimeout);
+            markerFadeInTimeout = null;
+        }
         if (map) {
             map.remove();
         }
@@ -762,21 +390,30 @@
 </script>
 
 <div bind:this={mapContainer} class="map-container">
-    {#if staticImageOverlayUrl}
+    {#if staticImageOverlayUrl && staticImageOverlayVisible}
         <img
             src={staticImageOverlayUrl}
             alt="Port satellite view"
             class="static-image-overlay"
-            class:visible={staticImageOverlayVisible}
+            in:fade={{ duration: 1000 }}
+            out:fade={{ duration: 1000 }}
         />
     {/if}
 
-    {#if staticImageOverlayVisible && portLabelOverlayName}
+    {#if (portMarkerVisible && portLabelMarkerColor) || (staticImageOverlayVisible && portLabelOverlayName)}
         {@const portName = portLabelOverlayName}
         <div class="port-label-overlay">
-            <div class="port-marker"></div>
-            <div class="port-line"></div>
-            <div class="port-label">{portName}</div>
+            {#if portMarkerVisible && portLabelMarkerColor}
+                <div 
+                    class="port-marker" 
+                    style="background: {portLabelMarkerColor};"
+                    in:fade={{ duration: 300 }}
+                ></div>
+            {/if}
+            {#if staticImageOverlayVisible && portLabelOverlayName}
+                <div class="port-line"></div>
+                <div class="port-label">{portName}</div>
+            {/if}
         </div>
     {/if}
 </div>
@@ -796,13 +433,7 @@
         height: 100%;
         object-fit: cover;
         pointer-events: none;
-        opacity: 0;
-        transition: opacity 1s ease-in-out;
         z-index: 10;
-
-        &.visible {
-            opacity: 1;
-        }
     }
 
     .port-label-overlay {
@@ -821,12 +452,9 @@
         transform: translate(-50%, -50%);
         width: 11px;
         height: 11px;
-        background: #d98e1d;
         border-radius: 50%;
         border: 2px solid #ffffff;
-        z-index: 20;
-        // opacity: 0;
-        // animation: markerFadeIn 0.3s ease-out 2.4s forwards;
+        z-index: 30;
     }
 
     .port-line {

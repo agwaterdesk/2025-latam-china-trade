@@ -49,7 +49,7 @@
     });
 
     const usColor = getValueFromCSSVar("--color-theme-us");
-    const latamColor = getValueFromCSSVar("--color-theme-latam");
+    const brazilColor = getValueFromCSSVar("--color-theme-brazil");
 
     // Get unique dates
     const dates = $derived.by(() => {
@@ -63,7 +63,7 @@
 
     // Create color scale for US and Brazil
     const getCountryColor = (partner) => {
-        return partner === "United States" ? usColor : latamColor;
+        return partner === "United States" ? usColor : brazilColor;
     };
 
     // Chart dimensions

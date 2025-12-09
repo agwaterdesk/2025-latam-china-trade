@@ -1,3 +1,7 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import bbox from "@turf/bbox";
 import us_china_north from "../data/us_china_north.json";
 import us_china_south from "../data/us_china_south.json";
@@ -5,6 +9,18 @@ import shippingLanesLatAmChina from "../data/Shipping_Lanes_LatAm_China.json";
 import shippingLanesChancayChina from "../data/Shipping_Lanes_Chancay_China.json";
 import shippingLanesOldChina from "../data/Shipping_Lanes_Old_China.json";
 import ports from "../data/ports.json";
+import getValueFromCSSVar from "./getValueFromCSSVar";
+
+// ============================================================================
+// CONSTANTS AND DATA CONFIGURATIONS
+// ============================================================================
+
+const usColor = getValueFromCSSVar("--color-theme-us");
+const latamColor = getValueFromCSSVar("--color-theme-latam");
+const chinaColor = getValueFromCSSVar("--color-theme-china");
+
+// Default color for shipping lanes (used as fallback)
+const DEFAULT_SHIPPING_LANE_COLOR = "#ff6b35";
 
 // Export ports for use in layer configs
 export { ports };
@@ -27,80 +43,29 @@ export const shippingLanesDataMap = {
     old_china: shippingLanesOldChina,
 };
 
-// Default color for shipping lanes (used as fallback)
-const DEFAULT_SHIPPING_LANE_COLOR = "#ff6b35";
-
-/**
- * Merge multiple shipping lane datasets and add laneType property to each feature
- * @param {string|Array<string>|Array<{id: string, color: string}>} shippingLanesConfig - 
- *   Single type string, array of type strings, or array of objects with id and color
- * @returns {Object} Merged GeoJSON FeatureCollection with laneType property
- */
-export const getMergedShippingLanes = (shippingLanesConfig) => {
-    if (!shippingLanesConfig) {
-        return { type: "FeatureCollection", features: [] };
-    }
-
-    // Normalize to array of objects with id
-    let laneConfigs = [];
-    
-    if (typeof shippingLanesConfig === "string") {
-        // Single string - backward compatibility
-        laneConfigs = [{ id: shippingLanesConfig }];
-    } else if (Array.isArray(shippingLanesConfig)) {
-        // Array - check if objects or strings
-        laneConfigs = shippingLanesConfig.map((item) => {
-            if (typeof item === "string") {
-                // Backward compatibility: string becomes object with id
-                return { id: item };
-            }
-            // Already an object with id and color
-            return item;
-        });
-    }
-    
-    const allFeatures = [];
-    
-    laneConfigs.forEach((config) => {
-        const type = config.id;
-        const data = shippingLanesDataMap[type];
-        if (data && data.features) {
-            // Add laneType property to each feature
-            const featuresWithType = data.features.map((feature) => ({
-                ...feature,
-                properties: {
-                    ...feature.properties,
-                    laneType: type,
-                },
-            }));
-            allFeatures.push(...featuresWithType);
-        }
-    });
-    
-    return {
-        type: "FeatureCollection",
-        features: allFeatures,
-    };
-};
-
 // Hardcoded port coordinates by shipping lane type
+// Each port can have: name, coordinates, and color
 export const portsByShippingLane = {
     us_china: [
         {
             name: "Gulf Coast export terminals",
             coordinates: [-89.799323, 29.344631],
+            color: usColor,
         },
         {
             name: "Pacific Northwest export terminals",
             coordinates: [-124.835138, 48.484726],
+            color: usColor,
         },
         {
             name: "Southern China ports",
             coordinates: [114.391855, 22.26097],
+            color: chinaColor,
         },
         {
             name: "Northern China ports",
             coordinates: [117.9907, 38.834611],
+            color: chinaColor,
         },
     ],
     latam_china: [
@@ -113,6 +78,10 @@ export const portsByShippingLane = {
         // Add old China ports here when needed
     ],
 };
+
+// ============================================================================
+// GEOGRAPHIC CALCULATION FUNCTIONS
+// ============================================================================
 
 /**
  * Calculate bounds from GeoJSON data using Turf
@@ -132,131 +101,6 @@ export const calculateBoundsFromGeoJson = (boundsKey) => {
         console.error(`Error calculating bounds for ${boundsKey}:`, error);
         return null;
     }
-};
-
-/**
- * Extract start and end points from GeoJSON features
- * @param {Array} features - Array of GeoJSON features
- * @returns {Array} Array of point features with type (start/end) and featureIndex
- */
-export const extractPortPoints = (features) => {
-    const points = [];
-    
-    features.forEach((feature, featureIndex) => {
-        if (!feature.geometry) return;
-        
-        const geometryType = feature.geometry.type;
-        
-        if (geometryType === "LineString") {
-            const coordinates = feature.geometry.coordinates;
-            if (coordinates.length > 0) {
-                // Start point
-                points.push({
-                    type: "Feature",
-                    geometry: {
-                        type: "Point",
-                        coordinates: coordinates[0],
-                    },
-                    properties: {
-                        type: "start",
-                        featureIndex,
-                    },
-                });
-                // End point
-                points.push({
-                    type: "Feature",
-                    geometry: {
-                        type: "Point",
-                        coordinates: coordinates[coordinates.length - 1],
-                    },
-                    properties: {
-                        type: "end",
-                        featureIndex,
-                    },
-                });
-            }
-        } else if (geometryType === "MultiLineString") {
-            const multiCoordinates = feature.geometry.coordinates;
-            if (multiCoordinates.length > 0) {
-                // Start point (first coordinate of first segment)
-                const firstSegment = multiCoordinates[0];
-                if (firstSegment.length > 0) {
-                    points.push({
-                        type: "Feature",
-                        geometry: {
-                            type: "Point",
-                            coordinates: firstSegment[0],
-                        },
-                        properties: {
-                            type: "start",
-                            featureIndex,
-                        },
-                    });
-                }
-                // End point (last coordinate of last segment)
-                const lastSegment = multiCoordinates[multiCoordinates.length - 1];
-                if (lastSegment.length > 0) {
-                    points.push({
-                        type: "Feature",
-                        geometry: {
-                            type: "Point",
-                            coordinates: lastSegment[lastSegment.length - 1],
-                        },
-                        properties: {
-                            type: "end",
-                            featureIndex,
-                        },
-                    });
-                }
-            }
-        }
-    });
-    
-    return points;
-};
-
-/**
- * Generate Mapbox static image URL from view config
- * @param {Object} view - View configuration object with center and zoom
- * @param {string} mapboxToken - Mapbox access token
- * @returns {string|null} Static image URL or null if invalid
- */
-export const generateStaticImageUrl = (view, mapboxToken) => {
-    if (!view || !view.center || !view.zoom || !mapboxToken) return null;
-    
-    const [lon, lat] = view.center;
-    const zoom = view.zoom;
-    // Use a large size that will scale to fit the container
-    // Using @2x for retina displays
-    const width = 700;
-    const height = 700;
-    
-    return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${mapboxToken}`;
-};
-
-/**
- * Get ports for a shipping lane type as GeoJSON FeatureCollection
- * @param {string} shippingLanesType - Type of shipping lane
- * @returns {Object} GeoJSON FeatureCollection of port points
- */
-export const getPortsForShippingLane = (shippingLanesType) => {
-    const ports = portsByShippingLane[shippingLanesType];
-    if (!ports || ports.length === 0) {
-        return { type: "FeatureCollection", features: [] };
-    }
-    
-    const features = ports.map((port) => ({
-        type: "Feature",
-        geometry: {
-            type: "Point",
-            coordinates: port.coordinates,
-        },
-        properties: {
-            name: port.name,
-        },
-    }));
-    
-    return { type: "FeatureCollection", features };
 };
 
 /**
@@ -357,6 +201,63 @@ export const calculatePartialCoordinates = (coordinates, cumulativeDistances, ta
     return partialCoordinates;
 };
 
+// ============================================================================
+// SHIPPING LANE FUNCTIONS
+// ============================================================================
+
+/**
+ * Merge multiple shipping lane datasets and add laneType property to each feature
+ * @param {string|Array<string>|Array<{id: string, color: string}>} shippingLanesConfig - 
+ *   Single type string, array of type strings, or array of objects with id and color
+ * @returns {Object} Merged GeoJSON FeatureCollection with laneType property
+ */
+export const getMergedShippingLanes = (shippingLanesConfig) => {
+    if (!shippingLanesConfig) {
+        return { type: "FeatureCollection", features: [] };
+    }
+
+    // Normalize to array of objects with id
+    let laneConfigs = [];
+    
+    if (typeof shippingLanesConfig === "string") {
+        // Single string - backward compatibility
+        laneConfigs = [{ id: shippingLanesConfig }];
+    } else if (Array.isArray(shippingLanesConfig)) {
+        // Array - check if objects or strings
+        laneConfigs = shippingLanesConfig.map((item) => {
+            if (typeof item === "string") {
+                // Backward compatibility: string becomes object with id
+                return { id: item };
+            }
+            // Already an object with id and color
+            return item;
+        });
+    }
+    
+    const allFeatures = [];
+    
+    laneConfigs.forEach((config) => {
+        const type = config.id;
+        const data = shippingLanesDataMap[type];
+        if (data && data.features) {
+            // Add laneType property to each feature
+            const featuresWithType = data.features.map((feature) => ({
+                ...feature,
+                properties: {
+                    ...feature.properties,
+                    laneType: type,
+                },
+            }));
+            allFeatures.push(...featuresWithType);
+        }
+    });
+    
+    return {
+        type: "FeatureCollection",
+        features: allFeatures,
+    };
+};
+
 /**
  * Generate paint configuration for shipping lanes based on view's color mapping
  * @param {Object} view - View configuration object
@@ -417,6 +318,211 @@ const getShippingLanesPaint = (view) => {
     };
 };
 
+// ============================================================================
+// PORT FUNCTIONS
+// ============================================================================
+
+/**
+ * Extract start and end points from GeoJSON features
+ * @param {Array} features - Array of GeoJSON features
+ * @returns {Array} Array of point features with type (start/end) and featureIndex
+ */
+export const extractPortPoints = (features) => {
+    const points = [];
+    
+    features.forEach((feature, featureIndex) => {
+        if (!feature.geometry) return;
+        
+        const geometryType = feature.geometry.type;
+        
+        if (geometryType === "LineString") {
+            const coordinates = feature.geometry.coordinates;
+            if (coordinates.length > 0) {
+                // Start point
+                points.push({
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: coordinates[0],
+                    },
+                    properties: {
+                        type: "start",
+                        featureIndex,
+                    },
+                });
+                // End point
+                points.push({
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: coordinates[coordinates.length - 1],
+                    },
+                    properties: {
+                        type: "end",
+                        featureIndex,
+                    },
+                });
+            }
+        } else if (geometryType === "MultiLineString") {
+            const multiCoordinates = feature.geometry.coordinates;
+            if (multiCoordinates.length > 0) {
+                // Start point (first coordinate of first segment)
+                const firstSegment = multiCoordinates[0];
+                if (firstSegment.length > 0) {
+                    points.push({
+                        type: "Feature",
+                        geometry: {
+                            type: "Point",
+                            coordinates: firstSegment[0],
+                        },
+                        properties: {
+                            type: "start",
+                            featureIndex,
+                        },
+                    });
+                }
+                // End point (last coordinate of last segment)
+                const lastSegment = multiCoordinates[multiCoordinates.length - 1];
+                if (lastSegment.length > 0) {
+                    points.push({
+                        type: "Feature",
+                        geometry: {
+                            type: "Point",
+                            coordinates: lastSegment[lastSegment.length - 1],
+                        },
+                        properties: {
+                            type: "end",
+                            featureIndex,
+                        },
+                    });
+                }
+            }
+        }
+    });
+    
+    return points;
+};
+
+/**
+ * Get ports for a shipping lane type as GeoJSON FeatureCollection (for labels)
+ * @param {string} shippingLanesType - Type of shipping lane
+ * @returns {Object} GeoJSON FeatureCollection of port points
+ */
+export const getPortLabelsForShippingLane = (shippingLanesType) => {
+    const ports = portsByShippingLane[shippingLanesType];
+    if (!ports || ports.length === 0) {
+        return { type: "FeatureCollection", features: [] };
+    }
+    
+    const features = ports.map((port) => ({
+        type: "Feature",
+        geometry: {
+            type: "Point",
+            coordinates: port.coordinates,
+        },
+        properties: {
+            name: port.name,
+            color: port.color,
+        },
+    }));
+    
+    return { type: "FeatureCollection", features };
+};
+
+/**
+ * Get port markers for a shipping lane type as GeoJSON FeatureCollection (for port circles)
+ * @param {string|Array<string>|Array<{id: string, color: string}>} shippingLanesConfig - 
+ *   Single type string, array of type strings, or array of objects with id and color
+ * @returns {Object} GeoJSON FeatureCollection of port marker points with colors
+ */
+export const getPortMarkersForShippingLane = (shippingLanesConfig) => {
+    if (!shippingLanesConfig) {
+        return { type: "FeatureCollection", features: [] };
+    }
+
+    // Normalize to array of shipping lane type strings
+    let laneTypes = [];
+    
+    if (typeof shippingLanesConfig === "string") {
+        laneTypes = [shippingLanesConfig];
+    } else if (Array.isArray(shippingLanesConfig)) {
+        laneTypes = shippingLanesConfig.map((item) => {
+            if (typeof item === "string") {
+                return item;
+            }
+            return item.id; // Extract id from object config
+        });
+    }
+    
+    const allPorts = [];
+    const seenPorts = new Set(); // Track ports by coordinates to avoid duplicates
+    
+    laneTypes.forEach((laneType) => {
+        // Try exact match first
+        let ports = portsByShippingLane[laneType];
+        
+        // If no exact match, try fallback by removing suffix (e.g., us_china_north -> us_china)
+        if (!ports || ports.length === 0) {
+            const parts = laneType.split('_');
+            if (parts.length > 2) {
+                // Try with first two parts (e.g., us_china from us_china_north)
+                const fallbackKey = parts.slice(0, 2).join('_');
+                ports = portsByShippingLane[fallbackKey];
+            }
+        }
+        
+        if (ports && ports.length > 0) {
+            ports.forEach((port) => {
+                // Create a unique key for this port to avoid duplicates
+                const portKey = `${port.coordinates[0]},${port.coordinates[1]}`;
+                if (!seenPorts.has(portKey)) {
+                    seenPorts.add(portKey);
+                    allPorts.push({
+                        type: "Feature",
+                        geometry: {
+                            type: "Point",
+                            coordinates: port.coordinates,
+                        },
+                        properties: {
+                            name: port.name,
+                            color: port.color,
+                        },
+                    });
+                }
+            });
+        }
+    });
+    
+    return { type: "FeatureCollection", features: allPorts };
+};
+
+// ============================================================================
+// MAPBOX/VIEW UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Generate Mapbox static image URL from view config
+ * @param {Object} view - View configuration object with center and zoom
+ * @param {string} mapboxToken - Mapbox access token
+ * @returns {string|null} Static image URL or null if invalid
+ */
+export const generateStaticImageUrl = (view, mapboxToken) => {
+    if (!view || !view.center || !view.zoom || !mapboxToken) return null;
+    
+    const [lon, lat] = view.center;
+    const zoom = view.zoom;
+    // Use a large size that will scale to fit the container
+    // Using @2x for retina displays
+    const width = 700;
+    const height = 700;
+    
+    return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${mapboxToken}`;
+};
+
+// ============================================================================
+// LAYER CONFIGURATION
+// ============================================================================
+
 /**
  * Layer configuration array for Mapbox layers
  * Each config defines source, layer, data getter, and visibility logic
@@ -472,7 +578,7 @@ export const layerConfigs = [
             visibility: "none", // Initially hidden
         },
         paint: {
-            "circle-color": "#d98e1d",
+            "circle-color": latamColor,
             "circle-radius": 6,
             "circle-stroke-width": 2,
             "circle-stroke-color": "#ffffff",
@@ -486,13 +592,16 @@ export const layerConfigs = [
     {
         sourceId: "shipping-lane-ports",
         layerId: "shipping-lane-ports",
-        getData: () => ({ type: "FeatureCollection", features: [] }),
+        getData: (view) => {
+            const shippingLanesTypes = view?.layers?.shippingLanes;
+            return getPortMarkersForShippingLane(shippingLanesTypes);
+        },
         type: "circle",
         layout: {
             visibility: "none", // Initially hidden
         },
         paint: {
-            "circle-color": "#d98e1d",
+            "circle-color": ["get", "color"], // Data-driven color from port properties
             "circle-radius": 6,
             "circle-stroke-width": 2,
             "circle-stroke-color": "#ffffff",
@@ -508,7 +617,7 @@ export const layerConfigs = [
         getData: (view) => {
             const portLabelsType = view?.layers?.portLabels;
             if (!portLabelsType) return { type: "FeatureCollection", features: [] };
-            return getPortsForShippingLane(portLabelsType);
+            return getPortLabelsForShippingLane(portLabelsType);
         },
         type: "symbol",
         layout: {
