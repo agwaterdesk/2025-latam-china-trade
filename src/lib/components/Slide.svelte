@@ -9,7 +9,6 @@
             .map((line) => line.trim())
             .filter((line) => line.length > 0),
     );
-
 </script>
 
 <section class="slide" class:active={isActive}>
@@ -72,19 +71,34 @@
             .route {
                 width: 20px;
                 height: 2px;
-                border-top: 2px dashed #ff6b35;
                 display: inline-block;
                 margin-right: 0.25rem;
+                &.us {
+                    border-top: 2px dashed var(--color-theme-us);
+                }
+                &.latam {
+                    border-top: 2px dashed var(--color-theme-latam);
+                }
+                &.brazil {
+                    border-top: 2px dashed var(--color-theme-brazil);
+                }
+                &.china {
+                    border-top: 2px dashed var(--color-theme-china);
+                }
+                &.peru {
+                    border-top: 2px dashed var(--color-theme-peru);
+                }
             }
 
             .seaport {
-                width: 15px;
-                height: 15px;
+                width: 11px;
+                height: 11px;
                 border-radius: 50%;
                 display: inline-block;
-                margin-left: 0.25rem;
-
-                &.orange {
+                border: 1px solid #ddd;
+                // vertical-align: middle;
+                margin-right: 0.25rem;
+                &.latam {
                     background: var(--color-theme-latam);
                 }
             }
@@ -97,6 +111,18 @@
                 }
                 &.latam {
                     background: var(--color-theme-latam);
+                    color: white;
+                }
+                &.china {
+                    background: var(--color-theme-china);
+                    color: white;
+                }
+                &.brazil {
+                    background: var(--color-theme-brazil);
+                    color: white;
+                }
+                &.peru {
+                    background: var(--color-theme-peru);
                     color: white;
                 }
             }

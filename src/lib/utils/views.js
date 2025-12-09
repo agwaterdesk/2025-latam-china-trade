@@ -1,10 +1,16 @@
+import getValueFromCSSVar from "./getValueFromCSSVar";
+
+const usColor = getValueFromCSSVar("--color-theme-us");
+const latamColor = getValueFromCSSVar("--color-theme-latam");
+const chinaColor = getValueFromCSSVar("--color-theme-china");
+
 export const views = {
     us_china_routes: {
         bbox: [-258.046875, 14.604847, -72.421875, 50.289339],
         layers: {
             shippingLanes: [
-                { id: "us_china_north", color: "#ff6b35" },
-                { id: "us_china_south", color: "#4ecdc4" },
+                { id: "us_china_north", color: usColor },
+                { id: "us_china_south", color: usColor },
             ],
             portLabels: "us_china",
             isAnimated: true,
@@ -53,7 +59,8 @@ export const views = {
             animatedPortLabel: {
                 coordinates: [-46.3021, -23.9655],
                 name: "Port of Santos",
-                offset: [0, 0.006], // Offset in degrees [lon, lat] - shortened line
+                offset: [0, 0.006],
+                markerColor: getValueFromCSSVar("--color-theme-brazil"),
             },
         },
     },
@@ -74,11 +81,12 @@ export const views = {
         bearing: 0,
         basemap: "satellite",
         layers: {
-            latam_ports: true,
+            latam_ports: false,
             animatedPortLabel: {
                 coordinates: [-77.2731, -11.5843],
                 name: "Port of Chancay",
                 offset: [0, 0.006], // Offset in degrees [lon, lat] - shortened line
+                markerColor: getValueFromCSSVar("--color-theme-peru"),
             },
         },
     },
