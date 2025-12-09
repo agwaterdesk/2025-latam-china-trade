@@ -4,21 +4,14 @@
     import Map from "./Map.svelte";
     import BumpChart from "./BumpChart.svelte";
     import AreaChart from "./AreaChart.svelte";
-    import Globe from "./Globe.svelte";
-    import Image from "./Image.svelte";
+
     import VideoPlayer from "./VideoPlayer.svelte";
-
-   
-
 </script>
 
 <div class="background-container">
     <div class="background-content">
         {#if activeSlide?.type == "chart"}
             <AreaChart {activeId} />
-            <!-- <Globe {activeId} {view} /> -->
-        {:else if activeSlide?.type == "image"}
-            <!-- <Image {activeId} /> -->
         {:else if activeSlide?.type == "video"}
             <VideoPlayer {activeId} {view} />
         {/if}
