@@ -32,6 +32,14 @@
         align-items: center;
         justify-content: center;
         margin: 0 0 1rem 0;
+
+        &:first-of-type {
+            padding-top: 50vh;
+        }
+
+        &:last-of-type {
+            padding-bottom: 50vh;
+        }
     }
 
     .slide-content {
@@ -81,6 +89,7 @@
                 }
                 &.brazil {
                     border-top: 2px dashed var(--color-theme-brazil);
+                    margin-left: 0.25rem;
                 }
                 &.china {
                     border-top: 2px dashed var(--color-theme-china);
