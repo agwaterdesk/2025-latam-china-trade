@@ -1,7 +1,6 @@
 <script>
     let { activeId } = $props();
     import { fade } from "svelte/transition";
-    import { assets } from '$app/paths';
     let imageSrcs = {
         "port_of_santos_image": {
             src: "porto-de-Santos-2.jpg",
@@ -13,7 +12,7 @@
 </script>
 
 <div class="image" transition:fade>
-    <img src={assets + "/images/" + imageSrcs[activeId].src} alt={imageSrcs[activeId].alt} />
+    <img src={"images/" + imageSrcs[activeId].src} alt={imageSrcs[activeId].alt} />
     <span class="image-attribution">{imageSrcs[activeId].attribution}</span>
 </div>
 

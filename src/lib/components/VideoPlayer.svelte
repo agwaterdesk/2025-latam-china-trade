@@ -1,7 +1,6 @@
 <script>
     import { onMount } from "svelte";
     import { fade } from "svelte/transition";
-    import { assets } from '$app/paths';
     let { activeId } = $props();
 
     let mounted = $state(false);
@@ -92,7 +91,7 @@
                 >
                     <video
                         bind:this={videoElement}
-                        src={assets + "/videos/" + video.src}
+                        src={"videos/" + video.src}
                         autoplay
                         loop
                         muted={isMuted}

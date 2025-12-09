@@ -1,7 +1,5 @@
 import adapterStatic from "@sveltejs/adapter-static";
 
-const assets = process.env.ASSETS_URL ? process.env.ASSETS_URL.replace(/\/$/, '') : '';
-
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	kit: {
@@ -13,9 +11,6 @@ const config = {
 			pages: 'dist',
 			assets: 'dist'
 		}),
-		paths: {
-			assets
-		},
 		// Remove inline bundling for WordPress compatibility
 		// output: {
 		// 	bundleStrategy: 'inline'

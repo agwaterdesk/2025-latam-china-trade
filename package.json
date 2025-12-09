@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"build:embed": "ASSETS_URL=https://cdn.jsdelivr.net/gh/agwaterdesk/2025-latam-china-trade@main/dist npm run build && node tasks/generate-embed.js",
+		"build:embed": "npm run build && node tasks/generate-embed.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"gdoc": "node tasks/fetch-google.js"
