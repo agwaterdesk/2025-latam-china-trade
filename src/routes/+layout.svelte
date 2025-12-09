@@ -98,5 +98,8 @@
 		--color-theme-us: #2a7ac2;
 		--color-theme-latam: var(--color-theme-color-secondary);
 		--color-theme-other: var(--color-gray-300);
+		--color-theme-china: #90b03e;
+		--color-theme-brazil: #ff6b35;
+		--color-theme-peru: #b03ea3;
 	}
 </style>
