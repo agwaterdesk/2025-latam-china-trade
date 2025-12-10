@@ -1,1 +1,1 @@
-export const env={}
+export const env={"PUBLIC_CDN_URL":"https://cdn.jsdelivr.net/gh/agwaterdesk/2025-latam-china-trade@main/dist/"}
