@@ -129,16 +129,19 @@ export const views = {
                     name: "Shanghai",
                     coordinates: [121.4811671393545, 31.2317060958153],
                     color: chinaColor,
+                    mobileTextAnchor: "left",
                 },
                 {
                     name: "Port of Chancay",
                     coordinates: [-77.2731, -11.5843],
                     color: getValueFromCSSVar("--color-theme-peru"),
+                    mobileTextAnchor: "right",
                 },
                 {
                     name: "Manaus",
                     coordinates: [-59.98846226806313, -3.039817325221312],
                     color: brazilColor,
+                    mobileTextAnchor: "bottom-right",
                 },
 
             ],
