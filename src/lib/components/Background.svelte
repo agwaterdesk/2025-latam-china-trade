@@ -28,6 +28,11 @@
         height: 700px;
         position: relative;
         background: var(--color-gray-100);
+
+        @media (max-width: 768px) {
+            width: 100%;
+            margin-left: 0;
+        }
     }
 
     .background-content {
