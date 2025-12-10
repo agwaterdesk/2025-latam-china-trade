@@ -255,7 +255,6 @@
                     const bounds = calculateBoundsFromGeoJson(
                         currentView.bounds,
                     );
-                    console.log("bounds", bounds);
                     if (bounds) {
                         map.fitBounds(bounds, {
                             padding: 50,
