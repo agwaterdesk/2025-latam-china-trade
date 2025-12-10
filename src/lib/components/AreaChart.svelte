@@ -5,6 +5,7 @@
     import chinaFoodImportsAnnual from "../data/china-soy-imports-by-country-annual.csv";
     import chinaFoodImportsMonthly from "../data/china-soy-imports-by-country-monthly.csv";
     import getValueFromCSSVar from "../utils/getValueFromCSSVar";
+    import { isMobile } from "../stores/global.js";
 
     let { activeId } = $props();
     let areasGroup;
@@ -67,9 +68,19 @@
     };
 
     // Chart dimensions
-    const margin = { top: 60, right: 20, bottom: 30, left: 40 };
-    let width = $state(400);
-    let height = $state(500);
+    const margin = $derived({ top: 20, right: $isMobile ? 40 : 20, bottom: 30, left: 40 });
+    let textHeight = $state(80);
+    let containerWidth = $state(400);
+    let containerHeight = $state(500);
+    
+    // Calculate available space for chart (container height minus text height and margins)
+    const marginTotal = 40; // 20px top + 20px bottom from chart-header
+    const chartHeight = $derived.by(() => {
+        return Math.max(300, containerHeight - textHeight - marginTotal);
+    });
+    
+    const width = $derived(containerWidth);
+    const height = $derived(chartHeight);
     const innerWidth = $derived(width - margin.left - margin.right);
     const innerHeight = $derived(height - margin.top - margin.bottom);
 
@@ -196,7 +207,7 @@
                     const year = date.getFullYear();
                     return {
                         value: date,
-                        label: `${monthAbbreviations[month]} ${year}`,
+                        label: `${monthAbbreviations[month]} ${$isMobile ? `‘${year.toString().slice(-2)}` : year}`,
                         x: xScale(date),
                     };
                 });
@@ -275,18 +286,33 @@
     });
 </script>
 
-<div class="area-chart-wrapper" transition:fade={{ duration: 250 }}>
+<div
+    class="area-chart-wrapper"
+    transition:fade={{ duration: 250 }}
+    style:--margin="{margin.top}px"
+    style:--chart-text-height="{textHeight}px"
+>
     {#if mounted}
         <div class="area-chart-inner">
             {#key activeId}
                 <div
                     class="area-chart-container"
-                    bind:clientWidth={width}
-                    bind:clientHeight={height}
+                    bind:clientWidth={containerWidth}
+                    bind:clientHeight={containerHeight}
                     in:fade={{ duration: 500 }}
                     out:fade={{ duration: 500 }}
                 >
-                    <svg {width} {height}>
+                    <!-- Title and Description -->
+                    <div class="chart-header" bind:clientHeight={textHeight}>
+                        <div class="chart-title">
+                            Share of China's soybean imports, by country
+                        </div>
+                        <div class="chart-description">
+                            {descriptionText}
+                        </div>
+                    </div>
+
+                    <svg width={width} height={height}>
                         <g transform="translate({margin.left},{margin.top})">
                             <!-- Mask definition for overlay -->
                             <defs>
@@ -397,23 +423,6 @@
                                 {/each}
                             {/if}
                         </g>
-
-                        <!-- Title -->
-                        <text
-                            class="chart-title"
-                            x={width / 2}
-                            y={margin.top - 40}
-                        >
-                            Share of China's soybean imports, by country
-                        </text>
-
-                        <text
-                            class="chart-description"
-                            x={width / 2}
-                            y={margin.top - 17}
-                        >
-                            {descriptionText}
-                        </text>
                     </svg>
                 </div>
             {/key}
@@ -422,19 +431,26 @@
 </div>
 
 <style lang="scss">
+    .chart-header {
+        margin-top: var(--margin);
+        margin-bottom: var(--margin);
+        text-align: center;
+    }
+
     .chart-title {
         font-size: 24px;
         font-weight: 600;
-        fill: var(--color-gray-1000);
+        color: var(--color-gray-1000);
         font-family: var(--font-heading);
-        text-anchor: middle;
+        margin-bottom: 8px;
+        line-height: 1.2;
     }
 
     .chart-description {
         font-size: 14px;
-        fill: var(--color-gray-500);
+        color: var(--color-gray-500);
         font-family: var(--font-heading);
-        text-anchor: middle;
+        line-height: 1.4;
     }
 
     .area-chart-wrapper {
@@ -462,7 +478,6 @@
         left: 0;
         display: flex;
         flex-direction: column;
-        justify-content: center;
     }
 
     svg {
