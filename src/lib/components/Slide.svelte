@@ -62,7 +62,7 @@
 
     @media (max-width: 768px) {
         .slide {
-            height: 60vh;
+            height: 150vh;
             padding: 1rem;
         }
 
