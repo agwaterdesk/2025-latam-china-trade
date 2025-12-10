@@ -2,7 +2,7 @@ PHONY: github agwaterdesk
 
 github:
 	rm -rf docs
-	cp -r build docs
+	cp -r dist docs
 	touch docs/.nojekyll
 	git add -A
 	git commit -m "update github pages"
