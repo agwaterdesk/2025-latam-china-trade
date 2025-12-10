@@ -387,6 +387,7 @@ export const getPortLabelsForShippingLane = (view) => {
         properties: {
             name: port.name,
             color: port.color,
+            mobileTextAnchor: port.mobileTextAnchor || null,
         },
     }));
     
@@ -549,6 +550,27 @@ export const layerConfigs = [
             "text-offset": [0, 0.75],
             "text-anchor": "top",
             visibility: "none", // Initially hidden
+        },
+        getLayout: (view, isMobile = false) => {
+            const baseLayout = {
+                "text-field": ["get", "name"],
+                "text-font": ["Noto Sans", "Arial Unicode MS Bold"],
+                "text-size": 12,
+                "text-offset": [0, 0.75],
+            };
+            
+            // Use mobileTextAnchor if on mobile and it exists, otherwise use "top"
+            if (isMobile) {
+                baseLayout["text-anchor"] = [
+                    "coalesce",
+                    ["get", "mobileTextAnchor"],
+                    "top"
+                ];
+            } else {
+                baseLayout["text-anchor"] = "top";
+            }
+            
+            return baseLayout;
         },
         paint: {
             "text-color": "#ffffff",

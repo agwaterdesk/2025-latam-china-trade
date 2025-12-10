@@ -22,6 +22,7 @@
         PortLabelAnimator,
     } from "../utils/mapAnimations.js";
 
+    import { isMobile } from "../stores/global.js";
     let { activeId, view, defaultView } = $props();
 
     // Get Mapbox token from environment variables based on environment
@@ -74,13 +75,20 @@
         }
 
         // Generate URL and fetch image with current container dimensions
-        const imageUrl = generateStaticImageUrl(view, mapboxToken, containerDimensions);
+        const imageUrl = generateStaticImageUrl(
+            view,
+            mapboxToken,
+            containerDimensions,
+        );
         if (!imageUrl) return null;
 
         try {
             const response = await fetch(imageUrl);
             if (!response.ok) {
-                console.error("Failed to fetch static image:", response.statusText);
+                console.error(
+                    "Failed to fetch static image:",
+                    response.statusText,
+                );
                 return null;
             }
             const blob = await response.blob();
@@ -106,7 +114,6 @@
         if (!map || !view) return;
 
         const shouldAnimate = view?.layers?.isAnimated === true;
-  
 
         // Get port markers source reference and set it on the animator
         const portMarkersSourceObj = map.getSource("shipping-lane-ports");
@@ -166,6 +173,21 @@
                 const visibility = config.getVisibility(view);
                 map.setLayoutProperty(config.layerId, "visibility", visibility);
 
+                // Update layout properties if getLayout function exists (for dynamic layout configs)
+                if (
+                    config.getLayout &&
+                    typeof config.getLayout === "function"
+                ) {
+                    const layoutConfig = config.getLayout(view, $isMobile);
+                    Object.keys(layoutConfig).forEach((property) => {
+                        map.setLayoutProperty(
+                            config.layerId,
+                            property,
+                            layoutConfig[property],
+                        );
+                    });
+                }
+
                 // Update paint properties if getPaint function exists (for dynamic paint configs)
                 if (config.getPaint && typeof config.getPaint === "function") {
                     const paintConfig = config.getPaint(view);
@@ -203,7 +225,8 @@
                         markerFadeInTimeout = null;
                     }
                     // Get cached static image (will fetch if not cached)
-                    const cachedImageUrl = await getCachedStaticImage(currentView);
+                    const cachedImageUrl =
+                        await getCachedStaticImage(currentView);
                     if (cachedImageUrl) {
                         staticImageOverlayUrl = cachedImageUrl;
                         // Hide initially, will fade in after map transition
@@ -214,7 +237,8 @@
                         portLabelOverlayName =
                             currentView.layers.animatedPortLabel.name;
                         portLabelMarkerColor =
-                            currentView.layers.animatedPortLabel.markerColor || "#d98e1d";
+                            currentView.layers.animatedPortLabel.markerColor ||
+                            "#d98e1d";
                         // Hide marker initially, will fade in at midpoint of map transition
                         portMarkerVisible = false;
                     } else {
@@ -281,12 +305,17 @@
                         pitch: currentView.pitch || 0,
                         bearing: currentView.bearing || 0,
                         duration: currentView.duration || 2000,
+                        padding: 500,
                     });
                     transitionComplete = true;
                 }
 
                 // Fade in marker at midpoint of map transition (half of 2000ms = 1000ms)
-                if (shouldShowStaticOverlay && transitionComplete && portLabelMarkerColor) {
+                if (
+                    shouldShowStaticOverlay &&
+                    transitionComplete &&
+                    portLabelMarkerColor
+                ) {
                     markerFadeInTimeout = setTimeout(() => {
                         portMarkerVisible = true;
                         markerFadeInTimeout = null;
@@ -359,6 +388,10 @@
                     height: Math.round(rect.height),
                 };
                 // Check if dimensions actually changed
+                const wasMobile = containerDimensions.width <= 560;
+                const isNowMobile = newDimensions.width <= 560;
+                const mobileStateChanged = wasMobile !== isNowMobile;
+
                 if (
                     newDimensions.width !== containerDimensions.width ||
                     newDimensions.height !== containerDimensions.height
@@ -366,6 +399,11 @@
                     // Clear cache when dimensions change
                     clearImageCache();
                     containerDimensions = newDimensions;
+
+                    // Update layers if mobile state changed (to update text-anchor)
+                    if (mobileStateChanged && map && view) {
+                        updateLayers(view || defaultView);
+                    }
                 }
             }
         };
@@ -414,6 +452,7 @@
 
             // Add all layers from configuration
             const initialView = view || defaultView || {};
+    
             layerConfigs.forEach((config) => {
                 // Add data source
                 const initialData = config.getData(initialView);
@@ -432,6 +471,12 @@
                     data: initialData,
                 });
 
+                // Get layout configuration (use getLayout if available, otherwise use static layout)
+                const layoutConfig =
+                    config.getLayout && typeof config.getLayout === "function"
+                        ? config.getLayout(initialView, $isMobile)
+                        : config.layout;
+
                 // Get paint configuration (use getPaint if available, otherwise use static paint)
                 const paintConfig =
                     config.getPaint && typeof config.getPaint === "function"
@@ -443,7 +488,7 @@
                     id: config.layerId,
                     type: config.type,
                     source: config.sourceId,
-                    layout: config.layout,
+                    layout: layoutConfig,
                     paint: paintConfig,
                 });
             });
@@ -496,8 +541,8 @@
 
     <div class="port-label-overlay">
         {#if portMarkerVisible && portLabelMarkerColor}
-            <div 
-                class="port-marker" 
+            <div
+                class="port-marker"
                 style="background: {portLabelMarkerColor};"
                 in:fade={{ duration: 300 }}
                 out:fade={{ duration: 300 }}
