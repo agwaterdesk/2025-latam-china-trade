@@ -1,7 +1,6 @@
 PHONY: github agwaterdesk
 
 github:
-	npm run build
 	rm -rf docs
 	cp -r build docs
 	touch docs/.nojekyll
