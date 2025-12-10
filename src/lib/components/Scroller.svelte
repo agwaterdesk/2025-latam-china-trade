@@ -213,6 +213,8 @@
 		display: block;
 		position: relative;
 		z-index: 2;
+		pointer-events: none;
+
 	}
 
 	svelte-scroller-foreground::after {
