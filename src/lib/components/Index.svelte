@@ -117,7 +117,7 @@
 
     [slot="background"] {
         overflow: hidden;
-        height: 100vh;
+        height: 100dvh;
     }
 
     [slot="foreground"] {
