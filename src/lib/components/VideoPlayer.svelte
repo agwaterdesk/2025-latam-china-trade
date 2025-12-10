@@ -65,7 +65,7 @@
 </script>
 
 <div class="video-player-wrapper" transition:fade={{ duration: 250 }}>
-    {#if mounted && videos[activeId] && videos[activeId].src}
+    {#if mounted && activeId && videos[activeId] && videos[activeId].src}
         <div class="video-player-inner">
             {#each [activeId] as id (id)}
                 {@const video = videos[id]}
@@ -78,7 +78,7 @@
                 >
                     <video
                         bind:this={videoElement}
-                        src={base + "videos/" + video.src}
+                        src={video?.src ? base + "videos/" + video.src : ""}
                         autoplay
                         loop
                         muted={isMuted}
@@ -120,7 +120,7 @@
                             {/if}
                         </button>
                     {/if}
-                    <span class="credit">{video.credit}</span>
+                    <span class="credit">{video?.credit}</span>
                 </div>
             {/each}
         </div>
