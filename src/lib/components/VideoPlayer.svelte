@@ -1,7 +1,11 @@
 <script>
     import { onMount } from "svelte";
     import { fade } from "svelte/transition";
+    import { dev } from '$app/environment';
+    import { PUBLIC_CDN_URL } from '$env/static/public';
     let { activeId } = $props();
+
+    const base = dev ? '' : PUBLIC_CDN_URL;
 
     let mounted = $state(false);
 
@@ -91,7 +95,7 @@
                 >
                     <video
                         bind:this={videoElement}
-                        src={"videos/" + video.src}
+                        src={base + "videos/" + video.src}
                         autoplay
                         loop
                         muted={isMuted}
