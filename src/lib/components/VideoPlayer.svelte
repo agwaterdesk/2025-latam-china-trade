@@ -1,12 +1,12 @@
 <script>
     import { onMount } from "svelte";
     import { fade } from "svelte/transition";
-    import { dev } from '$app/environment';
-    import { PUBLIC_CDN_URL } from '$env/static/public';
-    import { videos } from '$lib/data/videos.js';
+    import { dev } from "$app/environment";
+    import { PUBLIC_CDN_URL } from "$env/static/public";
+    import { videos } from "$lib/data/videos.js";
     let { activeId } = $props();
 
-    const base = dev ? '' : PUBLIC_CDN_URL;
+    const base = dev ? "" : PUBLIC_CDN_URL;
 
     let mounted = $state(false);
 
@@ -83,6 +83,7 @@
                         loop
                         muted={isMuted}
                         playsinline
+                        class:fullbleed={video?.fullbleed}
                     ></video>
                     {#if showMuteButton}
                         <button
@@ -127,7 +128,7 @@
     {/if}
 </div>
 
-<style>
+<style lang="scss">
     .video-player-wrapper {
         width: 100%;
         height: 100%;
@@ -151,6 +152,12 @@
         position: absolute;
         top: 0;
         left: 0;
+
+        video:not(.fullbleed) {
+            width: 100%;
+            object-fit: contain;
+            height: 100%;
+        }
     }
 
     .mute-button {
@@ -170,6 +177,10 @@
         transition: background 0.2s;
         pointer-events: all;
         z-index: 10000;
+
+        @media (max-width: 768px) {
+            top: 3rem;
+        }
     }
 
     .mute-button:hover {
