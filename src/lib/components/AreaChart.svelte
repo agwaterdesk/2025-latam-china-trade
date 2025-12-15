@@ -255,8 +255,8 @@
 
         if (activeId === "china_soy_chart_annual") {
             // First Trump administration for annual view
-            const startDate = new Date(2016, 0, 1);
-            const endDate = new Date(2020, 0, 1);
+            const startDate = new Date(2017, 0, 1);
+            const endDate = new Date(2021, 0, 1);
             const startX = xScale(startDate);
             const endX = xScale(endDate);
             const width = endX - startX;
