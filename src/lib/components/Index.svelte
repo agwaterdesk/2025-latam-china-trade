@@ -17,6 +17,16 @@
     let threshold = $state(0.5);
     let bottom = $state(1);
 
+    let direction = $state("forward");
+    let prevIndex = $state(undefined);
+
+    $effect(() => {
+        if (index !== undefined && prevIndex !== undefined && index !== prevIndex) {
+            direction = index > prevIndex ? "forward" : "backward";
+        }
+        prevIndex = index;
+    });
+
     // Mapbox token is now loaded from environment variables in Map.svelte
 
     // Get slides from copy data
@@ -88,7 +98,7 @@
         bind:progress
     >
         {#snippet background()}
-            <Background {activeId} {activeSlide} {view} {defaultView} />
+            <Background {activeId} {activeSlide} {view} {defaultView} {direction} />
         {/snippet}
 
         {#snippet foreground()}

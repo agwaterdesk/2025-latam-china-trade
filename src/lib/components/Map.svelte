@@ -23,7 +23,7 @@
     } from "../utils/mapAnimations.js";
 
     import { isMobile } from "../stores/global.js";
-    let { activeId, view, defaultView } = $props();
+    let { activeId, view, defaultView, direction } = $props();
 
     // Get Mapbox token from environment variables based on environment
     let mapboxToken = dev
@@ -229,8 +229,8 @@
                         await getCachedStaticImage(currentView);
                     if (cachedImageUrl) {
                         staticImageOverlayUrl = cachedImageUrl;
-                        // Hide initially, will fade in after map transition
-                        staticImageOverlayVisible = false;
+                        // When scrolling backward, show immediately; otherwise hide initially
+                        staticImageOverlayVisible = direction === "backward";
                     }
                     // Set port label name and marker color for overlay from view config
                     if (currentView.layers?.animatedPortLabel?.name) {
@@ -239,8 +239,8 @@
                         portLabelMarkerColor =
                             currentView.layers.animatedPortLabel.markerColor ||
                             "#d98e1d";
-                        // Hide marker initially, will fade in at midpoint of map transition
-                        portMarkerVisible = false;
+                        // When scrolling backward, show immediately; otherwise hide initially
+                        portMarkerVisible = direction === "backward";
                     } else {
                         portLabelOverlayName = null;
                         portLabelMarkerColor = null;
@@ -273,6 +273,8 @@
                 updateLayers(currentView);
 
                 // Update map view/camera
+                // When scrolling backward, skip animation (duration = 0)
+                const mapDuration = direction === "backward" ? 0 : (currentView.duration || 2000);
                 let transitionComplete = false;
                 if (currentView.bounds) {
                     // Calculate bounds from GeoJSON using Turf
@@ -282,7 +284,7 @@
                     if (bounds) {
                         map.fitBounds(bounds, {
                             padding: 50,
-                            duration: currentView.duration || 2000,
+                            duration: mapDuration,
                             pitch: currentView.pitch || 0,
                             bearing: currentView.bearing || 0,
                         });
@@ -292,7 +294,7 @@
                     // Use bbox to fit the map to the specified bounds
                     map.fitBounds(currentView.bbox, {
                         padding: 50,
-                        duration: currentView.duration || 2000,
+                        duration: mapDuration,
                         pitch: currentView.pitch || 0,
                         bearing: currentView.bearing || 0,
                     });
@@ -304,29 +306,30 @@
                         zoom: currentView.zoom || 0,
                         pitch: currentView.pitch || 0,
                         bearing: currentView.bearing || 0,
-                        duration: currentView.duration || 2000,
+                        duration: mapDuration,
                         padding: 500,
                     });
                     transitionComplete = true;
                 }
 
-                // Fade in marker at midpoint of map transition (half of 2000ms = 1000ms)
+                // Fade in marker at midpoint of map transition (only when scrolling forward)
                 if (
                     shouldShowStaticOverlay &&
                     transitionComplete &&
-                    portLabelMarkerColor
+                    portLabelMarkerColor &&
+                    direction === "forward"
                 ) {
                     markerFadeInTimeout = setTimeout(() => {
                         portMarkerVisible = true;
                         markerFadeInTimeout = null;
-                    }, currentView.duration / 2); // Half of map transition duration
+                    }, mapDuration / 2); // Half of map transition duration
                 }
 
-                // Fade in static image overlay after map transition completes
-                if (shouldShowStaticOverlay && transitionComplete) {
+                // Fade in static image overlay after map transition completes (only when scrolling forward)
+                if (shouldShowStaticOverlay && transitionComplete && direction === "forward") {
                     setTimeout(() => {
                         staticImageOverlayVisible = true;
-                    }, currentView.duration + 100); // Match the map transition duration (2000ms) + small delay
+                    }, mapDuration + 100); // Match the map transition duration + small delay
                 }
 
                 // Handle animated port label (only for non-static map views)
@@ -534,7 +537,7 @@
             src={staticImageOverlayUrl}
             alt="Port satellite view"
             class="static-image-overlay"
-            in:fade={{ duration: 1000 }}
+            in:fade={{ duration: direction === "backward" ? 0 : 1000 }}
             out:fade={{ duration: 1000 }}
         />
     {/if}
@@ -544,7 +547,7 @@
             <div
                 class="port-marker"
                 style="background: {portLabelMarkerColor};"
-                in:fade={{ duration: 300 }}
+                in:fade={{ duration: direction === "backward" ? 0 : 300 }}
                 out:fade={{ duration: 300 }}
             ></div>
         {/if}

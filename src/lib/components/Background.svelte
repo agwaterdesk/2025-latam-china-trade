@@ -1,5 +1,5 @@
 <script>
-    let { activeId, activeSlide, view, defaultView } = $props();
+    let { activeId, activeSlide, view, defaultView, direction } = $props();
 
     import Map from "./Map.svelte";
     import BumpChart from "./BumpChart.svelte";
@@ -18,7 +18,7 @@
     </div>
     <div class="map-container-overlay" class:active={view?.overlay}></div>
 
-    <Map {activeId} {view} {defaultView} />
+    <Map {activeId} {view} {defaultView} {direction} />
 </div>
 
 <style lang="scss">
