@@ -121,7 +121,7 @@
                             {/if}
                         </button>
                     {/if}
-                    <span class="credit">{video?.credit}</span>
+                    <span class="credit">{@html video?.credit}</span>
                 </div>
             {/each}
         </div>
@@ -192,13 +192,20 @@
         outline-offset: 2px;
     }
 
-    .credit {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        font-size: 12px;
-        color: #fff;
-        background: rgba(0, 0, 0, 0.5);
-        padding: 0.25rem;
+    :global {
+        .credit {
+            font-family: var(--font-heading);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            font-size: 12px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.25rem;
+            a {
+                color: #fff;
+                text-decoration: underline;
+            }
+        }
     }
 </style>
