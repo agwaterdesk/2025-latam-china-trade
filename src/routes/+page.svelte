@@ -10,7 +10,8 @@
 
 <svelte:head>
   {#each Object.values(videos) as video}
-    <link rel="preload" href="{base}videos/{video.src}" as="video" type="video/mp4" />
+    <link rel="preload" href="{base}videos/{video.src}" as="video" type="video/mp4" crossorigin="anonymous" />
+    <link rel="prefetch" href="{base}videos/{video.src}" />
   {/each}
 </svelte:head>
 
