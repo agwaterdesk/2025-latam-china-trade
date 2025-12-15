@@ -68,17 +68,22 @@
     };
 
     // Chart dimensions
-    const margin = $derived({ top: 20, right: $isMobile ? 40 : 20, bottom: 30, left: 40 });
+    const margin = $derived({
+        top: 20,
+        right: $isMobile ? 40 : 30,
+        bottom: 30,
+        left: 40,
+    });
     let textHeight = $state(80);
     let containerWidth = $state(400);
     let containerHeight = $state(500);
-    
+
     // Calculate available space for chart (container height minus text height and margins)
     const marginTotal = 40; // 20px top + 20px bottom from chart-header
     const chartHeight = $derived.by(() => {
         return Math.max(300, containerHeight - textHeight - marginTotal);
     });
-    
+
     const width = $derived(containerWidth);
     const height = $derived(chartHeight);
     const innerWidth = $derived(width - margin.left - margin.right);
@@ -213,11 +218,16 @@
                 });
         } else {
             // For annual view, show year labels
-            return dates.map((date) => ({
-                value: date,
-                label: String(date.getFullYear()),
-                x: xScale(date),
-            }));
+            return dates
+                .filter(
+                    (date, index) =>
+                        index % 4 === 0 || index === dates.length - 1,
+                )
+                .map((date) => ({
+                    value: date,
+                    label: String(date.getFullYear()),
+                    x: xScale(date),
+                }));
         }
     });
 
@@ -312,7 +322,7 @@
                         </div>
                     </div>
 
-                    <svg width={width} height={height}>
+                    <svg {width} {height}>
                         <g transform="translate({margin.left},{margin.top})">
                             <!-- Mask definition for overlay -->
                             <defs>
@@ -426,6 +436,12 @@
                     </svg>
                 </div>
             {/key}
+        </div>
+        <div class="source">
+            Source: <a
+                href="https://www.trade-data-monitor.com/"
+                target="_blank">Trade Data Monitor</a
+            >
         </div>
     {/if}
 </div>
@@ -551,5 +567,20 @@
     .legend {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
             sans-serif;
+    }
+
+    .source {
+        font-family: var(--font-heading);
+        font-size: 12px;
+        color: var(--color-gray-500);
+        text-align: left;
+        margin-top: 10px;
+        a {
+            color: var(--color-gray-500);
+        }
+
+        @media (max-width: 768px) {
+            text-align: center;
+        }
     }
 </style>
