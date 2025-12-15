@@ -245,7 +245,7 @@
     // Title text
     const descriptionText = $derived(
         activeId === "china_soy_chart_annual"
-            ? "Annually, 2016–2024"
+            ? "Annually, 2005–2024"
             : "Monthly, Sept. 2024–Sept. 2025",
     );
 
