@@ -10,7 +10,7 @@ export default [
 	},
 	{
 		"id": "1yO-PVi-sWz6DO6JXwogr0uRZfFOMbVB5rD5BY-XSv1A",
-		"gid": "140247294",
+		"gid": "1068392199",
 		"filepath": "src/lib/data/china-soy-imports-by-country-annual.csv"
 	},
 	{
