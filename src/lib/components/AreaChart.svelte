@@ -439,7 +439,7 @@
         </div>
         <div class="source">
             Source: <a
-                href="https://www.trade-data-monitor.com/"
+                href="https://tradedatamonitor.com/"
                 target="_blank">Trade Data Monitor</a
             >
         </div>
@@ -575,6 +575,8 @@
         color: var(--color-gray-500);
         text-align: left;
         margin-top: 10px;
+        pointer-events: all;
+  
         a {
             color: var(--color-gray-500);
         }
